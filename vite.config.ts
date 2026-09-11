@@ -11,5 +11,13 @@ export default defineConfig({
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
+
+    // Statički build — sajt je u cjelosti klijentski (forma, localStorage,
+    // Web3Forms), pa mu server nije potreban. Ovako ga svaki besplatni
+    // hosting servira bez podešavanja, uz vercel.json za rute.
+    spa: {
+      enabled: true,
+      prerender: { enabled: true, crawlLinks: true },
+    },
   },
 });
