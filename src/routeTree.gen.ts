@@ -9,18 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as PrototypeRouteImport } from './routes/prototype'
 import { Route as LogoPreviewRouteImport } from './routes/logo-preview'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 
-const PrototypeRoute = PrototypeRouteImport.update({
-  id: '/prototype',
-  path: '/prototype',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LogoPreviewRoute = LogoPreviewRouteImport.update({
   id: '/logo-preview',
   path: '/logo-preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -31,48 +31,48 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app': typeof AppRoute
   '/logo-preview': typeof LogoPreviewRoute
-  '/prototype': typeof PrototypeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/app': typeof AppRoute
   '/logo-preview': typeof LogoPreviewRoute
-  '/prototype': typeof PrototypeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/app': typeof AppRoute
   '/logo-preview': typeof LogoPreviewRoute
-  '/prototype': typeof PrototypeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/logo-preview' | '/prototype'
+  fullPaths: '/' | '/app' | '/logo-preview'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/logo-preview' | '/prototype'
-  id: '__root__' | '/' | '/logo-preview' | '/prototype'
+  to: '/' | '/app' | '/logo-preview'
+  id: '__root__' | '/' | '/app' | '/logo-preview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRoute
   LogoPreviewRoute: typeof LogoPreviewRoute
-  PrototypeRoute: typeof PrototypeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/prototype': {
-      id: '/prototype'
-      path: '/prototype'
-      fullPath: '/prototype'
-      preLoaderRoute: typeof PrototypeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/logo-preview': {
       id: '/logo-preview'
       path: '/logo-preview'
       fullPath: '/logo-preview'
       preLoaderRoute: typeof LogoPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -87,8 +87,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRoute,
   LogoPreviewRoute: LogoPreviewRoute,
-  PrototypeRoute: PrototypeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
