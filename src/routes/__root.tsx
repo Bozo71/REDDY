@@ -72,26 +72,100 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
+/* ── SEO ───────────────────────────────────────────────────────────────────
+   Sve na jednom mjestu, da se mijenja bez traženja po fajlu. */
+const SAJT = "https://thereddy.me";
+const TELEFON_PRIKAZ = "069 600 628";
+const TELEFON_E164 = "+38269600628";
+const NASLOV = "Majstor Podgorica – vodoinstalater, električar, moler | Reddy";
+const OPIS =
+  `Kvar u stanu? Reddy šalje provjerenog majstora u Podgorici i odgovara za posao do kraja. Pozovite ${TELEFON_PRIKAZ}.`;
+
+// Google čita ovo da bi znao ko smo, gdje radimo i šta radimo.
+const PODACI_O_FIRMI = {
+  "@context": "https://schema.org",
+  "@type": "HomeAndConstructionBusiness",
+  name: "Reddy",
+  url: SAJT,
+  telephone: TELEFON_E164,
+  email: "info@thereddy.me",
+  image: `${SAJT}/og-image.jpg`,
+  priceRange: "$$",
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Podgorica",
+    addressCountry: "ME",
+  },
+  areaServed: {
+    "@type": "City",
+    name: "Podgorica",
+  },
+  openingHoursSpecification: [
+    {
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+      opens: "08:00",
+      closes: "20:00",
+    },
+  ],
+  hasOfferCatalog: {
+    "@type": "OfferCatalog",
+    name: "Usluge",
+    itemListElement: [
+      "Vodoinstalaterski radovi",
+      "Električarski radovi",
+      "Molerski radovi",
+      "Fasaderski radovi",
+      "Keramičarski radovi",
+      "Klima uređaji i grijanje",
+      "Bravarske usluge",
+      "Video nadzor i alarmni sistemi",
+    ].map((usluga) => ({
+      "@type": "Offer",
+      itemOffered: { "@type": "Service", name: usluga },
+    })),
+  },
+};
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "REDDY — Javite kvar, dalje vodimo mi" },
-      { name: "description", content: "Voda, struja, moleraj, fasada. Cijela Podgorica. Šaljemo svog čovjeka, a za urađeno odgovaramo mi." },
-      { name: "author", content: "REDDY" },
-      { property: "og:title", content: "REDDY — Javite kvar, dalje vodimo mi" },
-      { property: "og:description", content: "Voda, struja, moleraj, fasada. Cijela Podgorica." },
+      { title: NASLOV },
+      { name: "description", content: OPIS },
+      { name: "author", content: "Reddy" },
+
+      // Open Graph — ovo se vidi kad se link podijeli na WhatsApp, Viber, Facebook.
+      { property: "og:title", content: NASLOV },
+      { property: "og:description", content: OPIS },
+      { property: "og:image", content: `${SAJT}/og-image.jpg` },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:url", content: SAJT },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { property: "og:locale", content: "sr_ME" },
+      { property: "og:site_name", content: "Reddy" },
+
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: NASLOV },
+      { name: "twitter:description", content: OPIS },
+      { name: "twitter:image", content: `${SAJT}/og-image.jpg` },
     ],
     links: [
+      { rel: "canonical", href: SAJT },
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap",
+      },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify(PODACI_O_FIRMI),
       },
     ],
   }),
@@ -103,7 +177,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="sr-Latn-ME">
       <head>
         <HeadContent />
       </head>
