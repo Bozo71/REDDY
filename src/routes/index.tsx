@@ -27,7 +27,7 @@ import {
 export const Route = createFileRoute("/")({
   component: PrototypePage,
   head: () => ({
-    links: [{ rel: "canonical", href: "https://thereddy.me" }],
+    links: [{ rel: "canonical", href: "https://www.thereddy.me" }],
   }),
 });
 

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://thereddy.me/sitemap.xml
+Sitemap: https://www.thereddy.me/sitemap.xml

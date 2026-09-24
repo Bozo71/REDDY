@@ -10,11 +10,14 @@
    Ovdje stoje samo podaci, bez ijednog React uvoza, jer i vite.config.ts
    čita ovu listu da bi znao koje stranice da prerenderuje.
 
+   Naslov: ključna riječ prva (to Google mjeri), pa kratak poziv na akciju.
+   Opis: konkretni kvarovi, jer se po njima takođe pretražuje.
+
    Tekst poštuje ista pravila kao ostatak sajta: bez cijena, bez vremena
    dolaska, bez broja majstora, bez „24/7" i bez ičega o plaćanju.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const SAJT = "https://thereddy.me";
+const SAJT = "https://www.thereddy.me";
 const TELEFON_PRIKAZ = "069 600 628";
 
 export type Usluga = {
@@ -39,8 +42,8 @@ export const USLUGE_STRANICE: Usluga[] = [
     naslovDolje: "Javite kvar, dalje vodimo mi.",
     podnaslov:
       "Curi, ne otiče, nema pritiska. Šaljemo svog čovjeka, a za urađeno odgovaramo mi. Ne on.",
-    title: "Vodoinstalater Podgorica – curenje, odgušenje, popravke | Reddy",
-    opis: `Treba vam vodoinstalater u Podgorici? Reddy šalje provjerenog majstora i odgovara za posao do kraja. Pozovite ${TELEFON_PRIKAZ}.`,
+    title: "Vodoinstalater Podgorica – javite kvar | Reddy",
+    opis: `Curi, ne otiče, nema pritiska? Reddy šalje provjerenog vodoinstalatera u Podgorici i odgovara za posao do kraja. Pozovite ${TELEFON_PRIKAZ}.`,
     imeUsluge: "Vodoinstalaterski radovi",
   },
   {
@@ -50,8 +53,8 @@ export const USLUGE_STRANICE: Usluga[] = [
     naslovDolje: "Javite kvar, dalje vodimo mi.",
     podnaslov:
       "Nema struje, iskaču osigurači, ne radi utičnica. Šaljemo svog čovjeka, a za urađeno odgovaramo mi. Ne on.",
-    title: "Električar Podgorica – kvarovi, osigurači, utičnice | Reddy",
-    opis: `Treba vam električar u Podgorici? Reddy šalje provjerenog majstora i odgovara za posao do kraja. Pozovite ${TELEFON_PRIKAZ}.`,
+    title: "Električar Podgorica – javite kvar | Reddy",
+    opis: `Nema struje, iskaču osigurači, ne radi utičnica? Reddy šalje provjerenog električara u Podgorici i odgovara za posao do kraja. Pozovite ${TELEFON_PRIKAZ}.`,
     imeUsluge: "Električarski radovi",
   },
   {
@@ -61,8 +64,8 @@ export const USLUGE_STRANICE: Usluga[] = [
     naslovDolje: "Javite šta treba, dalje vodimo mi.",
     podnaslov:
       "Zidovi poslije selidbe, vlaga, krečenje. Šaljemo svog čovjeka, a za urađeno odgovaramo mi. Ne on.",
-    title: "Moler Podgorica – krečenje, gletovanje, farbanje | Reddy",
-    opis: `Treba vam moler u Podgorici? Reddy šalje provjerenog majstora i odgovara za posao do kraja. Pozovite ${TELEFON_PRIKAZ}.`,
+    title: "Moler Podgorica – javite šta treba | Reddy",
+    opis: `Krečenje, gletovanje, zidovi poslije selidbe. Reddy šalje provjerenog molera u Podgorici i odgovara za posao do kraja. Pozovite ${TELEFON_PRIKAZ}.`,
     imeUsluge: "Molerski radovi",
   },
   {
@@ -72,8 +75,8 @@ export const USLUGE_STRANICE: Usluga[] = [
     naslovDolje: "Javite šta treba, dalje vodimo mi.",
     podnaslov:
       "Otpada, puca, prokišnjava. Šaljemo svog čovjeka, a za urađeno odgovaramo mi. Ne on.",
-    title: "Fasade Podgorica – sanacija, izolacija, farbanje | Reddy",
-    opis: `Radovi na fasadi u Podgorici? Reddy šalje provjerenog majstora i odgovara za posao do kraja. Pozovite ${TELEFON_PRIKAZ}.`,
+    title: "Fasade Podgorica – javite šta treba | Reddy",
+    opis: `Fasada otpada, puca ili prokišnjava? Reddy šalje provjerenog majstora u Podgorici i odgovara za posao do kraja. Pozovite ${TELEFON_PRIKAZ}.`,
     imeUsluge: "Fasaderski radovi",
   },
   {
@@ -83,8 +86,8 @@ export const USLUGE_STRANICE: Usluga[] = [
     naslovDolje: "Javite šta treba, dalje vodimo mi.",
     podnaslov:
       "Pločice u kupatilu, kuhinji, na terasi. Šaljemo svog čovjeka, a za urađeno odgovaramo mi. Ne on.",
-    title: "Keramičar Podgorica – pločice, kupatilo, terasa | Reddy",
-    opis: `Treba vam keramičar u Podgorici? Reddy šalje provjerenog majstora i odgovara za posao do kraja. Pozovite ${TELEFON_PRIKAZ}.`,
+    title: "Keramičar Podgorica – javite šta treba | Reddy",
+    opis: `Pločice u kupatilu, kuhinji, na terasi. Reddy šalje provjerenog keramičara u Podgorici i odgovara za posao do kraja. Pozovite ${TELEFON_PRIKAZ}.`,
     imeUsluge: "Keramičarski radovi",
   },
   {
@@ -94,8 +97,8 @@ export const USLUGE_STRANICE: Usluga[] = [
     naslovDolje: "Javite kvar, dalje vodimo mi.",
     podnaslov:
       "Ne hladi, ne grije, treba montaža ili čišćenje. Šaljemo svog čovjeka, a za urađeno odgovaramo mi. Ne on.",
-    title: "Servis klima Podgorica – montaža, čišćenje, punjenje | Reddy",
-    opis: `Servis ili montaža klime u Podgorici? Reddy šalje provjerenog majstora i odgovara za posao do kraja. Pozovite ${TELEFON_PRIKAZ}.`,
+    title: "Servis klima Podgorica – javite kvar | Reddy",
+    opis: `Ne hladi, ne grije, treba montaža ili čišćenje? Reddy šalje provjerenog majstora za klime u Podgorici i odgovara za posao do kraja. Pozovite ${TELEFON_PRIKAZ}.`,
     imeUsluge: "Klima uređaji i grijanje",
   },
   {
@@ -105,8 +108,8 @@ export const USLUGE_STRANICE: Usluga[] = [
     naslovDolje: "Javite kvar, dalje vodimo mi.",
     podnaslov:
       "Brava, ključ, vrata koja ne zaključavaju. Šaljemo svog čovjeka, a za urađeno odgovaramo mi. Ne on.",
-    title: "Bravar Podgorica – brave, ključevi, otvaranje vrata | Reddy",
-    opis: `Treba vam bravar u Podgorici? Reddy šalje provjerenog majstora i odgovara za posao do kraja. Pozovite ${TELEFON_PRIKAZ}.`,
+    title: "Bravar Podgorica – javite kvar | Reddy",
+    opis: `Brava, ključevi, vrata koja ne zaključavaju. Reddy šalje provjerenog bravara u Podgorici i odgovara za posao do kraja. Pozovite ${TELEFON_PRIKAZ}.`,
     imeUsluge: "Bravarske usluge",
   },
   {
@@ -116,8 +119,8 @@ export const USLUGE_STRANICE: Usluga[] = [
     naslovDolje: "Javite šta treba, dalje vodimo mi.",
     podnaslov:
       "Kamere, alarm, montaža i podešavanje. Šaljemo svog čovjeka, a za urađeno odgovaramo mi. Ne on.",
-    title: "Video nadzor Podgorica – kamere i alarmni sistemi | Reddy",
-    opis: `Kamere ili alarm u Podgorici? Reddy šalje provjerenog majstora i odgovara za posao do kraja. Pozovite ${TELEFON_PRIKAZ}.`,
+    title: "Video nadzor Podgorica – javite šta treba | Reddy",
+    opis: `Kamere i alarmni sistemi, montaža i podešavanje. Reddy šalje provjerenog majstora u Podgorici i odgovara za posao do kraja. Pozovite ${TELEFON_PRIKAZ}.`,
     imeUsluge: "Video nadzor i alarmni sistemi",
   },
 ];

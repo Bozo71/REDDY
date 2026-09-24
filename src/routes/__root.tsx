@@ -74,7 +74,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
 /* ── SEO ───────────────────────────────────────────────────────────────────
    Sve na jednom mjestu, da se mijenja bez traženja po fajlu. */
-const SAJT = "https://thereddy.me";
+const SAJT = "https://www.thereddy.me";
 const TELEFON_PRIKAZ = "069 600 628";
 const TELEFON_E164 = "+38269600628";
 const NASLOV = "Majstor Podgorica – vodoinstalater, električar, moler | Reddy";
@@ -161,7 +161,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // canonical ide po stranici, ne ovdje — inače bi svaka usluga imala dva.
 
       // Ikonice: .ico za starije pregledače i Windows prečice, PNG za sve ostalo.
-      { rel: "icon", href: "/favicon.ico", sizes: "48x48" },
+      { rel: "icon", href: "/favicon.ico", sizes: "16x16 32x32 48x48" },
       { rel: "icon", type: "image/png", sizes: "48x48", href: "/icon-48.png" },
       { rel: "icon", type: "image/png", sizes: "96x96", href: "/icon-96.png" },
       { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
