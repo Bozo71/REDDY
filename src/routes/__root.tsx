@@ -81,6 +81,11 @@ const NASLOV = "Majstor Podgorica – vodoinstalater, električar, moler | Reddy
 const OPIS =
   `Kvar u stanu? Reddy šalje provjerenog majstora u Podgorici i odgovara za posao do kraja. Pozovite ${TELEFON_PRIKAZ}.`;
 
+/* ── Mjerenje posjeta ──────────────────────────────────────────────────────
+   Google Analytics i Meta Pixel. Vrijede za sve stranice jer stoje u root ruti. */
+const GA_ID = "G-61ZNF9ZP4H";
+const META_PIXEL_ID = "1470513724898057";
+
 // Google čita ovo da bi znao ko smo, gdje radimo i šta radimo.
 const PODACI_O_FIRMI = {
   "@context": "https://schema.org",
@@ -172,6 +177,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
     ],
     scripts: [
+      { src: `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`, async: true },
+      {
+        children: `window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '${GA_ID}');`,
+      },
+      {
+        children: `!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '${META_PIXEL_ID}');
+fbq('track', 'PageView');`,
+      },
       {
         type: "application/ld+json",
         children: JSON.stringify(PODACI_O_FIRMI),
@@ -191,6 +215,16 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        {/* Meta Pixel za posjetioce bez JavaScripta — mora u body, slika u head nije validna. */}
+        <noscript>
+          <img
+            height="1"
+            width="1"
+            style={{ display: "none" }}
+            alt=""
+            src={`https://www.facebook.com/tr?id=${META_PIXEL_ID}&ev=PageView&noscript=1`}
+          />
+        </noscript>
         {children}
         <Scripts />
       </body>
