@@ -45,6 +45,8 @@ function scheduleJobReminder(opts: { category: string; scheduledAt: string }) {
 // Glavni sajt je sada na /.
 export const Route = createFileRoute("/app")({
   component: Index,
+  // Stara aplikacija — ne smije se pojaviti u pretrazi umjesto pravih stranica.
+  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
 });
 
 /* ============================================================

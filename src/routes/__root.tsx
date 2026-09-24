@@ -158,7 +158,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:image", content: `${SAJT}/og-image.jpg` },
     ],
     links: [
-      { rel: "canonical", href: SAJT },
+      // canonical ide po stranici, ne ovdje — inače bi svaka usluga imala dva.
 
       // Ikonice: .ico za starije pregledače i Windows prečice, PNG za sve ostalo.
       { rel: "icon", href: "/favicon.ico", sizes: "48x48" },

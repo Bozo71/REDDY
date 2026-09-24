@@ -25,6 +25,9 @@ import {
 
 export const Route = createFileRoute("/")({
   component: PrototypePage,
+  head: () => ({
+    links: [{ rel: "canonical", href: "https://thereddy.me" }],
+  }),
 });
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -391,11 +394,25 @@ function MobilniPoziv() {
    NASLOVNA
    ═══════════════════════════════════════════════════════════════════════════ */
 
-function Naslovna() {
+/* Stranice pojedinačnih usluga koriste isti sklop, mijenjaju samo naslov i
+   unaprijed izabran problem. Bez propova ispada tačno početna stranica. */
+export type TekstStranice = {
+  naslovGore?: string;
+  naslovDolje?: string;
+  podnaslov?: string;
+  pocetniProblem?: string;
+};
+
+function Naslovna({
+  naslovGore,
+  naslovDolje,
+  podnaslov,
+  pocetniProblem,
+}: TekstStranice = {}) {
   const [adresa, setAdresa] = useState("");
   const [predlozi, setPredlozi] = useState<string[]>([]);
   const [predloziOtvoreni, setPredloziOtvoreni] = useState(false);
-  const [problem, setProblem] = useState<string>(PROBLEMI[0]);
+  const [problem, setProblem] = useState<string>(pocetniProblem ?? PROBLEMI[0]);
   const [padajuciOtvoren, setPadajuciOtvoren] = useState(false);
   const [formaOtvorena, setFormaOtvorena] = useState(false);
   const [istakni, setIstakni] = useState(false);
@@ -449,13 +466,15 @@ function Naslovna() {
       {/* ── 2. HERO ── */}
       <section ref={heroRef} className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-12 text-center scroll-mt-24">
         <h1 className="text-[28px] sm:text-[44px] leading-[1.08] font-black tracking-tight">
-          Javite šta ne radi.
+          {naslovGore ?? "Javite šta ne radi."}
           <br />
-          <span className="text-[var(--sunshine-deep)]">Dalje vodimo mi.</span>
+          <span className="text-[var(--sunshine-deep)]">
+            {naslovDolje ?? "Dalje vodimo mi."}
+          </span>
         </h1>
         <p className="mt-3 text-[14px] sm:text-[16px] font-semibold text-[var(--plum-deep)]/65 max-w-xl mx-auto leading-relaxed">
-          Voda, struja, moleraj, fasada. Cijela Podgorica. Šaljemo svog čovjeka,
-          a za urađeno odgovaramo mi. Ne on.
+          {podnaslov ??
+            "Voda, struja, moleraj, fasada. Cijela Podgorica. Šaljemo svog čovjeka, a za urađeno odgovaramo mi. Ne on."}
         </p>
 
         <div className="mt-7 max-w-3xl mx-auto rounded-3xl bg-white border border-[var(--beige-border)] shadow-soft p-2.5 flex flex-col sm:flex-row gap-2">
@@ -1183,18 +1202,18 @@ function Forma({
    STRANICA
    ═══════════════════════════════════════════════════════════════════════════ */
 
-function PrototypePage() {
+export function PrototypePage(tekst: TekstStranice = {}) {
   const [formaIzHeadera, setFormaIzHeadera] = useState(false);
 
   return (
     <div className="min-h-screen text-[var(--plum-deep)]">
       <Zaglavlje otvoriFormu={() => setFormaIzHeadera(true)} />
-      <Naslovna />
+      <Naslovna {...tekst} />
       <MobilniPoziv />
 
       {formaIzHeadera && (
         <Forma
-          problem={PROBLEMI[0]}
+          problem={tekst.pocetniProblem ?? PROBLEMI[0]}
           adresa=""
           zatvori={() => setFormaIzHeadera(false)}
         />

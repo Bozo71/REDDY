@@ -9,13 +9,61 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VodoinstalaterPodgoricaRouteImport } from './routes/vodoinstalater-podgorica'
+import { Route as VideoNadzorPodgoricaRouteImport } from './routes/video-nadzor-podgorica'
+import { Route as MolerPodgoricaRouteImport } from './routes/moler-podgorica'
 import { Route as LogoPreviewRouteImport } from './routes/logo-preview'
+import { Route as KlimaServisPodgoricaRouteImport } from './routes/klima-servis-podgorica'
+import { Route as KeramicarPodgoricaRouteImport } from './routes/keramicar-podgorica'
+import { Route as FasadePodgoricaRouteImport } from './routes/fasade-podgorica'
+import { Route as ElektricarPodgoricaRouteImport } from './routes/elektricar-podgorica'
+import { Route as BravarPodgoricaRouteImport } from './routes/bravar-podgorica'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 
+const VodoinstalaterPodgoricaRoute = VodoinstalaterPodgoricaRouteImport.update({
+  id: '/vodoinstalater-podgorica',
+  path: '/vodoinstalater-podgorica',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VideoNadzorPodgoricaRoute = VideoNadzorPodgoricaRouteImport.update({
+  id: '/video-nadzor-podgorica',
+  path: '/video-nadzor-podgorica',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MolerPodgoricaRoute = MolerPodgoricaRouteImport.update({
+  id: '/moler-podgorica',
+  path: '/moler-podgorica',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LogoPreviewRoute = LogoPreviewRouteImport.update({
   id: '/logo-preview',
   path: '/logo-preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KlimaServisPodgoricaRoute = KlimaServisPodgoricaRouteImport.update({
+  id: '/klima-servis-podgorica',
+  path: '/klima-servis-podgorica',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KeramicarPodgoricaRoute = KeramicarPodgoricaRouteImport.update({
+  id: '/keramicar-podgorica',
+  path: '/keramicar-podgorica',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FasadePodgoricaRoute = FasadePodgoricaRouteImport.update({
+  id: '/fasade-podgorica',
+  path: '/fasade-podgorica',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ElektricarPodgoricaRoute = ElektricarPodgoricaRouteImport.update({
+  id: '/elektricar-podgorica',
+  path: '/elektricar-podgorica',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BravarPodgoricaRoute = BravarPodgoricaRouteImport.update({
+  id: '/bravar-podgorica',
+  path: '/bravar-podgorica',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -32,40 +80,162 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
+  '/bravar-podgorica': typeof BravarPodgoricaRoute
+  '/elektricar-podgorica': typeof ElektricarPodgoricaRoute
+  '/fasade-podgorica': typeof FasadePodgoricaRoute
+  '/keramicar-podgorica': typeof KeramicarPodgoricaRoute
+  '/klima-servis-podgorica': typeof KlimaServisPodgoricaRoute
   '/logo-preview': typeof LogoPreviewRoute
+  '/moler-podgorica': typeof MolerPodgoricaRoute
+  '/video-nadzor-podgorica': typeof VideoNadzorPodgoricaRoute
+  '/vodoinstalater-podgorica': typeof VodoinstalaterPodgoricaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
+  '/bravar-podgorica': typeof BravarPodgoricaRoute
+  '/elektricar-podgorica': typeof ElektricarPodgoricaRoute
+  '/fasade-podgorica': typeof FasadePodgoricaRoute
+  '/keramicar-podgorica': typeof KeramicarPodgoricaRoute
+  '/klima-servis-podgorica': typeof KlimaServisPodgoricaRoute
   '/logo-preview': typeof LogoPreviewRoute
+  '/moler-podgorica': typeof MolerPodgoricaRoute
+  '/video-nadzor-podgorica': typeof VideoNadzorPodgoricaRoute
+  '/vodoinstalater-podgorica': typeof VodoinstalaterPodgoricaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRoute
+  '/bravar-podgorica': typeof BravarPodgoricaRoute
+  '/elektricar-podgorica': typeof ElektricarPodgoricaRoute
+  '/fasade-podgorica': typeof FasadePodgoricaRoute
+  '/keramicar-podgorica': typeof KeramicarPodgoricaRoute
+  '/klima-servis-podgorica': typeof KlimaServisPodgoricaRoute
   '/logo-preview': typeof LogoPreviewRoute
+  '/moler-podgorica': typeof MolerPodgoricaRoute
+  '/video-nadzor-podgorica': typeof VideoNadzorPodgoricaRoute
+  '/vodoinstalater-podgorica': typeof VodoinstalaterPodgoricaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app' | '/logo-preview'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/bravar-podgorica'
+    | '/elektricar-podgorica'
+    | '/fasade-podgorica'
+    | '/keramicar-podgorica'
+    | '/klima-servis-podgorica'
+    | '/logo-preview'
+    | '/moler-podgorica'
+    | '/video-nadzor-podgorica'
+    | '/vodoinstalater-podgorica'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/app' | '/logo-preview'
-  id: '__root__' | '/' | '/app' | '/logo-preview'
+  to:
+    | '/'
+    | '/app'
+    | '/bravar-podgorica'
+    | '/elektricar-podgorica'
+    | '/fasade-podgorica'
+    | '/keramicar-podgorica'
+    | '/klima-servis-podgorica'
+    | '/logo-preview'
+    | '/moler-podgorica'
+    | '/video-nadzor-podgorica'
+    | '/vodoinstalater-podgorica'
+  id:
+    | '__root__'
+    | '/'
+    | '/app'
+    | '/bravar-podgorica'
+    | '/elektricar-podgorica'
+    | '/fasade-podgorica'
+    | '/keramicar-podgorica'
+    | '/klima-servis-podgorica'
+    | '/logo-preview'
+    | '/moler-podgorica'
+    | '/video-nadzor-podgorica'
+    | '/vodoinstalater-podgorica'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRoute
+  BravarPodgoricaRoute: typeof BravarPodgoricaRoute
+  ElektricarPodgoricaRoute: typeof ElektricarPodgoricaRoute
+  FasadePodgoricaRoute: typeof FasadePodgoricaRoute
+  KeramicarPodgoricaRoute: typeof KeramicarPodgoricaRoute
+  KlimaServisPodgoricaRoute: typeof KlimaServisPodgoricaRoute
   LogoPreviewRoute: typeof LogoPreviewRoute
+  MolerPodgoricaRoute: typeof MolerPodgoricaRoute
+  VideoNadzorPodgoricaRoute: typeof VideoNadzorPodgoricaRoute
+  VodoinstalaterPodgoricaRoute: typeof VodoinstalaterPodgoricaRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/vodoinstalater-podgorica': {
+      id: '/vodoinstalater-podgorica'
+      path: '/vodoinstalater-podgorica'
+      fullPath: '/vodoinstalater-podgorica'
+      preLoaderRoute: typeof VodoinstalaterPodgoricaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/video-nadzor-podgorica': {
+      id: '/video-nadzor-podgorica'
+      path: '/video-nadzor-podgorica'
+      fullPath: '/video-nadzor-podgorica'
+      preLoaderRoute: typeof VideoNadzorPodgoricaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/moler-podgorica': {
+      id: '/moler-podgorica'
+      path: '/moler-podgorica'
+      fullPath: '/moler-podgorica'
+      preLoaderRoute: typeof MolerPodgoricaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/logo-preview': {
       id: '/logo-preview'
       path: '/logo-preview'
       fullPath: '/logo-preview'
       preLoaderRoute: typeof LogoPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/klima-servis-podgorica': {
+      id: '/klima-servis-podgorica'
+      path: '/klima-servis-podgorica'
+      fullPath: '/klima-servis-podgorica'
+      preLoaderRoute: typeof KlimaServisPodgoricaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/keramicar-podgorica': {
+      id: '/keramicar-podgorica'
+      path: '/keramicar-podgorica'
+      fullPath: '/keramicar-podgorica'
+      preLoaderRoute: typeof KeramicarPodgoricaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/fasade-podgorica': {
+      id: '/fasade-podgorica'
+      path: '/fasade-podgorica'
+      fullPath: '/fasade-podgorica'
+      preLoaderRoute: typeof FasadePodgoricaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/elektricar-podgorica': {
+      id: '/elektricar-podgorica'
+      path: '/elektricar-podgorica'
+      fullPath: '/elektricar-podgorica'
+      preLoaderRoute: typeof ElektricarPodgoricaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bravar-podgorica': {
+      id: '/bravar-podgorica'
+      path: '/bravar-podgorica'
+      fullPath: '/bravar-podgorica'
+      preLoaderRoute: typeof BravarPodgoricaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -88,7 +258,15 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRoute,
+  BravarPodgoricaRoute: BravarPodgoricaRoute,
+  ElektricarPodgoricaRoute: ElektricarPodgoricaRoute,
+  FasadePodgoricaRoute: FasadePodgoricaRoute,
+  KeramicarPodgoricaRoute: KeramicarPodgoricaRoute,
+  KlimaServisPodgoricaRoute: KlimaServisPodgoricaRoute,
   LogoPreviewRoute: LogoPreviewRoute,
+  MolerPodgoricaRoute: MolerPodgoricaRoute,
+  VideoNadzorPodgoricaRoute: VideoNadzorPodgoricaRoute,
+  VodoinstalaterPodgoricaRoute: VodoinstalaterPodgoricaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

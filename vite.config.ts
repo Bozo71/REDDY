@@ -6,8 +6,14 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+import { USLUGE_STRANICE } from "./src/usluge";
+
 export default defineConfig({
   tanstackStart: {
+    // Stranice usluga nisu linkovane sa početne, pa ih crawlLinks ne bi našao.
+    // Bez ovoga bi Google na njima vidio prazan shell umjesto teksta.
+    pages: [{ path: "/" }, ...USLUGE_STRANICE.map((u) => ({ path: u.putanja }))],
+
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
@@ -15,9 +21,9 @@ export default defineConfig({
     // Statički build — sajt je u cjelosti klijentski (forma, localStorage,
     // Web3Forms), pa mu server nije potreban. Ovako ga svaki besplatni
     // hosting servira bez podešavanja, uz vercel.json za rute.
-    spa: {
-      enabled: true,
-      prerender: { enabled: true, crawlLinks: true },
-    },
+    //
+    // Bez SPA maske: u njoj se „/" uvijek pretvara u prazan shell, pa bi
+    // Google na početnoj vidio meta tagove bez ijedne riječi teksta.
+    prerender: { enabled: true, crawlLinks: true },
   },
 });

@@ -3,6 +3,8 @@ import { useMemo, useState } from "react";
 
 export const Route = createFileRoute("/logo-preview")({
   component: LogoPreview,
+  // Interna alatka za logo — nema šta da traži u pretrazi.
+  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
 });
 
 /**
