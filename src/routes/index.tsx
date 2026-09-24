@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { USLUGE_STRANICE } from "../usluge";
 import {
   ArrowRight,
   Camera,
@@ -715,11 +716,15 @@ function Naslovna({
               <div className="text-[12px] font-black uppercase tracking-wider text-[var(--sunshine)]">
                 Šta radimo
               </div>
+              {/* Linkovi ka stranicama usluga — i za posjetioce i da ih Google nađe. */}
               <ul className="mt-3 space-y-2 text-[12.5px] font-bold text-white/75">
-                <li>Vodoinstalater</li>
-                <li>Električar</li>
-                <li>Moleraj</li>
-                <li>Fasada</li>
+                {USLUGE_STRANICE.map((u) => (
+                  <li key={u.putanja}>
+                    <Link to={u.putanja} className="hover:text-[var(--sunshine)] transition">
+                      {u.problem}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
 
