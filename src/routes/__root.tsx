@@ -77,7 +77,8 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 const SAJT = "https://www.thereddy.me";
 const TELEFON_PRIKAZ = "069 600 628";
 const TELEFON_E164 = "+38269600628";
-const NASLOV = "Majstor Podgorica – vodoinstalater, električar, moler | Reddy";
+// Pojedinačni zanati imaju svoje stranice, pa početna nosi samo ime i grad.
+const NASLOV = "REDDY – Majstori Podgorica";
 const OPIS =
   `Kvar u stanu? Reddy šalje provjerenog majstora u Podgorici i odgovara za posao do kraja. Pozovite ${TELEFON_PRIKAZ}.`;
 
