@@ -289,7 +289,7 @@ async function posaljiPrijavu(p: Prijava, fajlovi: File[] = []): Promise<void> {
         subject: `REDDY — ${p.problem} — ${p.adresa}`,
         from_name: "REDDY sajt",
         // Klijentov mail ide kao „reply-to”, pa možeš odgovoriti jednim klikom.
-        replyto: p.email,
+        email: p.email,
         message: poruka,
       }),
     });
@@ -1123,7 +1123,7 @@ function Forma({
               <label className="mt-3.5 block text-[11px] font-black uppercase tracking-wider text-[var(--plum-deep)]/50">Email</label>
               <div className="mt-1.5 flex items-center gap-2 rounded-2xl bg-[var(--cream)] border border-[var(--beige-border)] px-3.5 h-12 focus-within:border-[var(--sunshine-deep)] transition">
                 <Mail className="w-4 h-4 text-[var(--plum-deep)]/40 shrink-0" />
-                <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="ana.popovic@email.com" className="w-full bg-transparent outline-none text-[13px] font-bold placeholder:text-[var(--plum-deep)]/35" />
+                <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" name="email" autoComplete="email" placeholder="ana.popovic@email.com" className="w-full bg-transparent outline-none text-[13px] font-bold placeholder:text-[var(--plum-deep)]/35" />
                 {/\S+@\S+\.\S+/.test(email) && <Check className="w-4 h-4 text-[var(--success)] shrink-0" />}
               </div>
 
