@@ -142,46 +142,76 @@ interface Prijava {
 /* Slike se otpremaju u Supabase Storage, a u mail ide link.
    (Web3Forms naplaćuje priloge, a Supabase već imamo i besplatan je.)
 
-   👉 JEDNOKRATNO PODEŠAVANJE — Supabase → Storage → New bucket:
-      ime: prijave   ·   Public bucket: UKLJUČENO
+   👉 JEDNOKRATNO PODEŠAVANJE — Supabase → SQL Editor → nalijepi i pokreni:
 
-   Zatim u SQL Editoru pokreni:
+      insert into storage.buckets (id, name, public)
+      values ('prijave', 'prijave', true)
+      on conflict (id) do update set public = true;
 
-      create policy "svako moze da salje sliku"
+      create policy "anon moze da otpremi sliku"
         on storage.objects for insert to anon
         with check (bucket_id = 'prijave');
 
-   Dok bucket ne postoji, prijava svejedno stiže — samo bez linka na sliku. */
+      create policy "slika je javno citljiva"
+        on storage.objects for select to anon
+        using (bucket_id = 'prijave');
+
+   Dok bucket ne postoji, prijava svejedno stiže — samo sa napomenom umjesto
+   linka, nikad tiho bez ičega. */
 const BUCKET_SLIKE = "prijave";
 
-async function otpremiSlike(fajlovi: File[]): Promise<string[]> {
+/* Ime fajla je nasumično, ne po vremenu i originalnom nazivu. Bucket je javan,
+   pa bi predvidivo ime značilo da se tuđe slike mogu pogoditi redom. */
+const nasumicnoIme = (): string => {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // Stariji pregledači bez randomUUID — i dalje nepogodivo.
+  const nasumicno = new Uint8Array(16);
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    crypto.getRandomValues(nasumicno);
+  } else {
+    for (let i = 0; i < 16; i++) nasumicno[i] = Math.floor(Math.random() * 256);
+  }
+  return Array.from(nasumicno, (b) => b.toString(16).padStart(2, "0")).join("");
+};
+
+type IshodOtpremanja = { linkovi: string[]; neuspjelo: number };
+
+async function otpremiSlike(fajlovi: File[]): Promise<IshodOtpremanja> {
   const linkovi: string[] = [];
-  for (const [i, fajl] of fajlovi.entries()) {
+  let neuspjelo = 0;
+
+  for (const fajl of fajlovi) {
     try {
-      const cistoIme = fajl.name
-        .normalize("NFD")
-        .replace(/[̀-ͯ]/g, "")
-        .replace(/[^a-zA-Z0-9.]/g, "-");
-      const putanja = `${Date.now()}-${i + 1}-${cistoIme}`;
+      const ekstenzija = (fajl.name.match(/\.[a-zA-Z0-9]+$/)?.[0] ?? ".jpg").toLowerCase();
+      const putanja = `${nasumicnoIme()}${ekstenzija}`;
+
       const { error } = await supabase.storage
         .from(BUCKET_SLIKE)
         .upload(putanja, fajl, { contentType: fajl.type, upsert: false });
+
       if (error) {
         console.warn("[REDDY] Slika nije otpremljena:", error.message);
+        neuspjelo++;
         continue;
       }
+
       const { data } = supabase.storage.from(BUCKET_SLIKE).getPublicUrl(putanja);
       if (data?.publicUrl) linkovi.push(data.publicUrl);
+      else neuspjelo++;
     } catch (e) {
       console.warn("[REDDY] Greška pri otpremanju slike:", e);
+      neuspjelo++;
     }
   }
-  return linkovi;
+
+  return { linkovi, neuspjelo };
 }
 
 // Prijava složena tako da se može odmah kopirati i proslijediti majstoru
 // na WhatsApp ili Viber — bez ijedne izmjene.
-function formatirajPrijavu(p: Prijava, linkovi: string[] = []): string {
+function formatirajPrijavu(p: Prijava, linkovi: string[] = [], neuspjelo = 0): string {
   const d = new Date(p.poslato);
   const dva = (n: number) => String(n).padStart(2, "0");
   const datum = `${dva(d.getDate())}.${dva(d.getMonth() + 1)}.${d.getFullYear()}. u ${dva(d.getHours())}:${dva(d.getMinutes())}`;
@@ -212,18 +242,37 @@ function formatirajPrijavu(p: Prijava, linkovi: string[] = []): string {
       linkovi.length === 1 ? "── FOTOGRAFIJA ──" : "── FOTOGRAFIJE ──",
       linkovi.join("\n"),
     );
-  } else if (p.fotografije.length) {
-    redovi.push("", "── FOTOGRAFIJE ──", p.fotografije.map((f) => `📷 ${f}`).join("\n"));
+  }
+
+  // Klijent je slao sliku, ali otpremanje nije prošlo — mora se vidjeti u mailu,
+  // inače izgleda kao da slike nije ni bilo pa se ne zove nazad.
+  if (neuspjelo > 0) {
+    redovi.push(
+      "",
+      "── SLIKA ──",
+      neuspjelo === 1
+        ? "⚠️ Slika nije uploadovana — pozovite klijenta da je pošalje na Viber."
+        : `⚠️ ${neuspjelo} slike nisu uploadovane — pozovite klijenta da ih pošalje na Viber.`,
+    );
   }
 
   redovi.push("", `Prijavljeno: ${datum}`);
   return redovi.join("\n");
 }
 
-// Slike sa telefona znaju biti i po 5 MB, a mail ih ne prima toliko.
-// Smanjujemo ih prije slanja — majstor i dalje savršeno vidi u čemu je problem.
-async function smanjiSliku(fajl: File, maxStranica = 1600, kvalitet = 0.8): Promise<File> {
+// Slike sa telefona znaju biti i po 10 MB. Smanjujemo ih prije otpremanja —
+// majstor i dalje savršeno vidi u čemu je problem, a slanje ne staje na vezi.
+const CILJ_BAJTOVA = 1_200_000; // ~1,2 MB po slici poslije smanjenja
+const KROV_BAJTOVA = 25_000_000; // preko ovoga se i ne pokušava
+
+async function smanjiSliku(fajl: File, maxStranica = 1600): Promise<File | null> {
   if (!fajl.type.startsWith("image/")) return fajl;
+  // Besmisleno velik fajl — nije fotografija kvara nego nešto drugo.
+  if (fajl.size > KROV_BAJTOVA) {
+    console.warn("[REDDY] Slika je prevelika, preskačem:", fajl.name, fajl.size);
+    return null;
+  }
+
   try {
     const url = URL.createObjectURL(fajl);
     const slika = await new Promise<HTMLImageElement>((rijesi, odbij) => {
@@ -235,7 +284,7 @@ async function smanjiSliku(fajl: File, maxStranica = 1600, kvalitet = 0.8): Prom
 
     const skala = Math.min(1, maxStranica / Math.max(slika.width, slika.height));
     // Već je mala — nema šta da se dira.
-    if (skala === 1 && fajl.size < 900_000) {
+    if (skala === 1 && fajl.size <= CILJ_BAJTOVA) {
       URL.revokeObjectURL(url);
       return fajl;
     }
@@ -246,9 +295,20 @@ async function smanjiSliku(fajl: File, maxStranica = 1600, kvalitet = 0.8): Prom
     platno.getContext("2d")?.drawImage(slika, 0, 0, platno.width, platno.height);
     URL.revokeObjectURL(url);
 
-    const blob = await new Promise<Blob | null>((r) => platno.toBlob(r, "image/jpeg", kvalitet));
-    if (!blob) return fajl;
-    return new File([blob], fajl.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
+    const novoIme = fajl.name.replace(/\.[^.]+$/, "") + ".jpg";
+
+    // Spuštamo kvalitet dok slika ne stane u cilj. Zadnji korak se prihvata
+    // kakav jeste — bolje slika od 2 MB nego nikakva.
+    for (const kvalitet of [0.8, 0.65, 0.5, 0.4]) {
+      const blob = await new Promise<Blob | null>((r) =>
+        platno.toBlob(r, "image/jpeg", kvalitet),
+      );
+      if (!blob) break;
+      if (blob.size <= CILJ_BAJTOVA || kvalitet === 0.4) {
+        return new File([blob], novoIme, { type: "image/jpeg" });
+      }
+    }
+    return fajl;
   } catch {
     return fajl;
   }
@@ -257,12 +317,20 @@ async function smanjiSliku(fajl: File, maxStranica = 1600, kvalitet = 0.8): Prom
 async function posaljiPrijavu(p: Prijava, fajlovi: File[] = []): Promise<void> {
   // Prvo smanji pa otpremi slike — u mail ide link, ne sam fajl.
   let linkovi: string[] = [];
+  let neuspjelo = 0;
+
   if (fajlovi.length) {
-    const smanjene = await Promise.all(fajlovi.map((f) => smanjiSliku(f)));
-    linkovi = await otpremiSlike(smanjene);
+    const obradjene = await Promise.all(fajlovi.map((f) => smanjiSliku(f)));
+    // smanjiSliku vrati null za fajl koji je prevelik da se uopšte obrađuje.
+    const prevelike = obradjene.filter((f) => f === null).length;
+    const smanjene = obradjene.filter((f): f is File => f !== null);
+
+    const ishod = await otpremiSlike(smanjene);
+    linkovi = ishod.linkovi;
+    neuspjelo = ishod.neuspjelo + prevelike;
   }
 
-  const poruka = formatirajPrijavu(p, linkovi);
+  const poruka = formatirajPrijavu(p, linkovi, neuspjelo);
 
   // Uvijek sačuvaj lokalno — ništa se ne gubi ni ako slanje padne.
   try {
@@ -280,6 +348,24 @@ async function posaljiPrijavu(p: Prijava, fajlovi: File[] = []): Promise<void> {
     return;
   }
 
+  /* Slike idu i kao zasebna polja, da u mailu budu klikabilni redovi, a ne
+     samo dio teksta poruke. Kad otpremanje padne, polje to i kaže — prijava
+     svejedno odlazi, jer klijent je važniji od slike. */
+  const poljaSlika: Record<string, string> = {};
+  if (linkovi.length === 1) {
+    poljaSlika["Slika"] = linkovi[0];
+  } else {
+    linkovi.forEach((link, i) => {
+      poljaSlika[`Slika ${i + 1}`] = link;
+    });
+  }
+  if (neuspjelo > 0) {
+    poljaSlika[linkovi.length ? "Slika — napomena" : "Slika"] =
+      neuspjelo === 1
+        ? "Slika nije uploadovana"
+        : `${neuspjelo} slike nisu uploadovane`;
+  }
+
   try {
     const odgovor = await fetch("https://api.web3forms.com/submit", {
       method: "POST",
@@ -290,6 +376,7 @@ async function posaljiPrijavu(p: Prijava, fajlovi: File[] = []): Promise<void> {
         from_name: "REDDY sajt",
         // Klijentov mail ide kao „reply-to”, pa možeš odgovoriti jednim klikom.
         email: p.email,
+        ...poljaSlika,
         message: poruka,
       }),
     });
