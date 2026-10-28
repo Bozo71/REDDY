@@ -9,14 +9,15 @@ import { scryptSync, randomBytes, timingSafeEqual, randomUUID } from "node:crypt
 const URL_BAZE = process.env.SUPABASE_URL ?? "";
 const KLJUC = process.env.SUPABASE_SERVICE_KEY ?? "";
 
-if (!URL_BAZE || !KLJUC) {
-  console.error(`
-  Nedostaje SUPABASE_URL ili SUPABASE_SERVICE_KEY.
+/* Ako ključevi fale, ne rušimo proces — na serveru bi to dalo praznu
+   grešku bez objašnjenja. Umjesto toga svaki poziv jasno kaže šta fali. */
+export const KLJUCEVI_FALE = !URL_BAZE || !KLJUC;
 
-  Lokalno: upiši ih u .env.local pored server.mjs
-  Na Vercelu: Settings → Environment Variables
-`);
-  process.exit(1);
+if (KLJUCEVI_FALE) {
+  console.error(
+    "Nedostaje SUPABASE_URL ili SUPABASE_SERVICE_KEY. " +
+    "Lokalno: .env.local. Na Vercelu: Settings → Environment Variables.",
+  );
 }
 
 const OSNOVA = `${URL_BAZE.replace(/\/+$/, "")}/rest/v1`;

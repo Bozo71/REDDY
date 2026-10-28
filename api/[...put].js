@@ -2,7 +2,7 @@
    Lokalno isto radi — server.mjs ga poziva. */
 
 import {
-  KATEGORIJE, citaj, citajJedan, upisi, izmijeni, obrisi, pozovi,
+  KATEGORIJE, KLJUCEVI_FALE, citaj, citajJedan, upisi, izmijeni, obrisi, pozovi,
   hash, provjeriHash, normalizujTelefon, napraviSesiju, nadjiSesiju,
   obrisiSesiju, stanjeMajstora, cijenaKategorije, sada,
 } from "../baza-supabase.mjs";
@@ -524,10 +524,16 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   if (req.method === "OPTIONS") { res.statusCode = 204; return res.end(); }
 
+  if (KLJUCEVI_FALE) {
+    return greska(res, 503,
+      "Server nije podešen: nedostaje SUPABASE_URL ili SUPABASE_SERVICE_KEY " +
+      "u Vercel → Settings → Environment Variables.");
+  }
+
   const putanja = new URL(req.url, "http://x").pathname.replace(/\/+$/, "") || "/api";
   const ruta = rute[`${req.method} ${putanja}`];
 
-  if (!ruta) return greska(res, 404, "Nema te rute.");
+  if (!ruta) return greska(res, 404, `Nema rute ${req.method} ${putanja}.`);
 
   try {
     await ruta(req, res);
