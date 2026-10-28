@@ -1,0 +1,354 @@
+/* REDDY — iste boje kao sajt. Krupno i jednostavno, radi se prstom na gradilištu. */
+
+:root {
+  --sunshine: oklch(0.86 0.17 88);
+  --sunshine-deep: oklch(0.78 0.18 75);
+  --plum: oklch(0.30 0.06 305);
+  --plum-deep: oklch(0.22 0.05 305);
+  --cream: oklch(0.985 0.03 92);
+  --beige: oklch(0.94 0.025 75);
+  --beige-border: oklch(0.88 0.03 70);
+  --success: oklch(0.72 0.15 155);
+  --alarm: oklch(0.58 0.19 28);
+
+  --sjenka: 0 12px 32px -16px oklch(0.22 0.05 305 / 0.3);
+  --sjaj: 0 14px 34px -14px oklch(0.86 0.17 88 / 0.55);
+
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+/* Mora biti !important — inače display iz klase nadjača hidden atribut
+   i sakriveni ekran ostane vidljiv ispod. */
+[hidden] { display: none !important; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--cream);
+  color: var(--plum-deep);
+  font-family: Nunito, "Segoe UI", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.plum-pozadina {
+  background: linear-gradient(140deg, oklch(0.30 0.06 305), oklch(0.22 0.05 305));
+}
+
+/* ── Zaglavlje ── */
+
+.vrh {
+  background: linear-gradient(140deg, oklch(0.30 0.06 305), oklch(0.22 0.05 305));
+  color: #fff;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 900;
+  font-size: 19px;
+  letter-spacing: 0.02em;
+}
+.logo img { width: 30px; height: 30px; border-radius: 8px; display: block; }
+
+.vrh-desno { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+/* ── Traka sa dugom ── */
+
+.stanje-traka {
+  background: var(--beige);
+  border-bottom: 1px solid var(--beige-border);
+  padding: 11px 16px;
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.stanje-stavka { display: flex; flex-direction: column; line-height: 1.25; }
+.stanje-ime {
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+.stanje-broj { font-size: 18px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.stanje-broj.crven { color: var(--alarm); }
+
+/* ── Omot ── */
+
+.omot { max-width: 760px; margin: 0 auto; padding: 16px; }
+
+h1 { font-size: 24px; font-weight: 900; margin: 0 0 4px; letter-spacing: -0.01em; }
+h2 { font-size: 17px; font-weight: 900; margin: 26px 0 10px; }
+.tiho { color: oklch(0.22 0.05 305 / 0.6); font-weight: 600; font-size: 14px; }
+
+/* ── Kartica posla ── */
+
+.posao {
+  background: #fff;
+  border: 1px solid var(--beige-border);
+  border-radius: 16px;
+  padding: 15px;
+  margin-bottom: 12px;
+  box-shadow: var(--sjenka);
+}
+.posao-vrh { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+
+.znak {
+  background: var(--beige);
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-size: 11.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.znak.zuta { background: linear-gradient(135deg, oklch(0.90 0.14 92), var(--sunshine-deep)); }
+.znak.zelena { background: oklch(0.72 0.15 155 / 0.18); color: oklch(0.38 0.12 155); }
+.znak.crvena { background: oklch(0.58 0.19 28 / 0.14); color: var(--alarm); }
+
+.cijena {
+  margin-left: auto;
+  font-size: 21px;
+  font-weight: 900;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.posao-opis { font-weight: 700; font-size: 16px; margin: 0 0 8px; }
+.posao-red { font-size: 13.5px; font-weight: 600; opacity: 0.72; margin: 2px 0; }
+
+/* Slike kvara — majstor po njima odlučuje da li mu se posao isplati. */
+.slike { display: flex; gap: 7px; margin: 10px 0; flex-wrap: wrap; }
+.slike a { display: block; line-height: 0; }
+.slike img {
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: 11px;
+  border: 1px solid var(--beige-border);
+  background: var(--beige);
+}
+
+.kontakt {
+  margin-top: 12px;
+  background: oklch(0.72 0.15 155 / 0.1);
+  border: 1px solid oklch(0.72 0.15 155 / 0.3);
+  border-radius: 12px;
+  padding: 12px;
+}
+.kontakt-ime { font-weight: 900; font-size: 15px; }
+.kontakt a {
+  display: inline-block;
+  margin-top: 7px;
+  font-size: 19px;
+  font-weight: 900;
+  color: oklch(0.38 0.12 155);
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Dugmad ── */
+
+.dugme {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 14px;
+  padding: 15px;
+  font: inherit;
+  font-size: 16.5px;
+  font-weight: 900;
+  cursor: pointer;
+  background: linear-gradient(135deg, oklch(0.90 0.14 92), var(--sunshine-deep));
+  color: var(--plum-deep);
+  box-shadow: var(--sjaj);
+  transition: transform 0.08s, opacity 0.15s;
+}
+.dugme:active { transform: scale(0.985); }
+.dugme:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+.dugme.tiha {
+  background: #fff;
+  border: 1px solid var(--beige-border);
+  box-shadow: none;
+  color: var(--plum-deep);
+}
+.dugme.mala { padding: 10px 14px; font-size: 14px; width: auto; display: inline-block; }
+.dugme.opasna { background: var(--alarm); color: #fff; box-shadow: none; }
+
+/* ── Polja ── */
+
+label.polje { display: block; margin-bottom: 13px; }
+label.polje span {
+  display: block;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.55;
+  margin-bottom: 5px;
+}
+input, select, textarea {
+  width: 100%;
+  font: inherit;
+  font-weight: 700;
+  padding: 13px 14px;
+  border: 1px solid var(--beige-border);
+  border-radius: 13px;
+  background: #fff;
+  color: var(--plum-deep);
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--sunshine-deep);
+  box-shadow: 0 0 0 3px oklch(0.86 0.17 88 / 0.3);
+}
+textarea { min-height: 86px; resize: vertical; }
+
+/* ── Poruke ── */
+
+.poruka {
+  border-radius: 13px;
+  padding: 13px 15px;
+  font-weight: 700;
+  font-size: 14.5px;
+  margin-bottom: 14px;
+}
+.poruka.lose { background: oklch(0.58 0.19 28 / 0.12); color: var(--alarm); }
+.poruka.dobro { background: oklch(0.72 0.15 155 / 0.15); color: oklch(0.36 0.12 155); }
+.poruka.pazi { background: oklch(0.86 0.17 88 / 0.22); }
+
+.prazno {
+  text-align: center;
+  padding: 44px 20px;
+  color: oklch(0.22 0.05 305 / 0.5);
+  font-weight: 700;
+}
+
+/* ── Prijava ── */
+
+.prijava-ekran {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+.prijava-kutija {
+  width: 100%;
+  max-width: 360px;
+  background: #fff;
+  border-radius: 22px;
+  padding: 26px;
+  box-shadow: 0 26px 60px -24px oklch(0.22 0.05 305 / 0.55);
+}
+.prijava-logo { text-align: center; margin-bottom: 20px; }
+.prijava-logo img { width: 64px; height: 64px; border-radius: 17px; }
+.prijava-logo div { font-weight: 900; font-size: 21px; margin-top: 9px; }
+
+/* ── Jezičci ── */
+
+.jezicci {
+  display: flex;
+  gap: 7px;
+  padding: 11px 16px 0;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.jezicak {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: 900;
+  font-size: 14px;
+  padding: 11px 6px;
+  border-radius: 12px 12px 0 0;
+  cursor: pointer;
+  color: oklch(0.22 0.05 305 / 0.5);
+  border-bottom: 3px solid transparent;
+}
+.jezicak.izabran {
+  color: var(--plum-deep);
+  border-bottom-color: var(--sunshine-deep);
+  background: oklch(0.86 0.17 88 / 0.14);
+}
+
+/* ── Tabela (admin) ── */
+
+.tabela-okvir { overflow-x: auto; border-radius: 14px; border: 1px solid var(--beige-border); background: #fff; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { padding: 11px 13px; text-align: left; border-bottom: 1px solid var(--beige); white-space: nowrap; }
+th {
+  font-size: 10.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  opacity: 0.55;
+  background: var(--cream);
+}
+tr:last-child td { border-bottom: 0; }
+td.broj { font-variant-numeric: tabular-nums; font-weight: 900; }
+td.broj.crven { color: var(--alarm); }
+
+/* ── Prekrivač ── */
+
+.prekrivac {
+  position: fixed;
+  inset: 0;
+  background: oklch(0.22 0.05 305 / 0.55);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  z-index: 60;
+}
+.prozor {
+  background: var(--cream);
+  border-radius: 20px;
+  padding: 22px;
+  width: 100%;
+  max-width: 440px;
+  max-height: 88svh;
+  overflow-y: auto;
+  box-shadow: 0 30px 70px -26px oklch(0.22 0.05 305 / 0.7);
+}
+.prozor h3 { margin: 0 0 14px; font-size: 19px; font-weight: 900; }
+
+.red-dugmadi { display: flex; gap: 9px; margin-top: 15px; }
+.red-dugmadi .dugme { flex: 1; }
+
+.kutije { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.kutija {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--beige-border);
+  border-radius: 11px;
+  padding: 10px 11px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.kutija input { width: 17px; height: 17px; accent-color: var(--sunshine-deep); }
+
+@media (max-width: 420px) {
+  .kutije { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}

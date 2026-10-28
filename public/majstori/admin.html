@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="sr-Latn-ME">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2B2640">
+<title>REDDY — Admin</title>
+<link rel="manifest" href="manifest-admin.json">
+<link rel="icon" href="ikona-192.png">
+<link rel="apple-touch-icon" href="ikona-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="REDDY Admin">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;900&display=swap">
+<link rel="stylesheet" href="stil.css">
+</head>
+<body>
+
+<!-- ── Prijava ── -->
+<div id="ekran-prijava" class="prijava-ekran plum-pozadina">
+  <div class="prijava-kutija">
+    <div class="prijava-logo">
+      <img src="ikona-192.png" alt="">
+      <div>REDDY</div>
+      <div class="tiho" style="font-size:13px;font-weight:700">Admin panel</div>
+    </div>
+
+    <div id="greska-prijava"></div>
+
+    <form id="forma-prijava">
+      <label class="polje">
+        <span>Nadimak</span>
+        <input id="a-nadimak" autocomplete="username" placeholder="bozo" required>
+      </label>
+      <label class="polje">
+        <span>Šifra</span>
+        <input id="a-sifra" type="password" autocomplete="current-password" placeholder="••••••••" required>
+      </label>
+      <button class="dugme" type="submit">Uđi</button>
+    </form>
+  </div>
+</div>
+
+<!-- ── Panel ── -->
+<div id="ekran-app" hidden>
+  <header class="vrh">
+    <div class="logo"><img src="ikona-192.png" alt=""> REDDY <span style="opacity:.5;font-weight:700">admin</span></div>
+    <div class="vrh-desno">
+      <span id="a-ko" class="tiho" style="color:#fff;opacity:.7;font-size:13px"></span>
+      <button id="dugme-izlaz" class="dugme tiha mala" type="button">Izađi</button>
+    </div>
+  </header>
+
+  <div class="stanje-traka">
+    <div class="stanje-stavka">
+      <span class="stanje-ime">Ukupno na dugu</span>
+      <span class="stanje-broj crven" id="u-dug">0 €</span>
+    </div>
+    <div class="stanje-stavka">
+      <span class="stanje-ime">Naplaćeno</span>
+      <span class="stanje-broj" id="u-naplaceno">0 €</span>
+    </div>
+    <div class="stanje-stavka">
+      <span class="stanje-ime">Prodato poslova</span>
+      <span class="stanje-broj" id="u-poslova">0</span>
+    </div>
+  </div>
+
+  <nav class="jezicci">
+    <button class="jezicak izabran" data-jezicak="majstori" type="button">Majstori</button>
+    <button class="jezicak" data-jezicak="prihvaceni" type="button">Ko je šta uzeo</button>
+    <button class="jezicak" data-jezicak="problemi" type="button">
+      Problemi <span id="broj-problema" class="znak crvena" hidden></span>
+    </button>
+    <button class="jezicak" data-jezicak="poslovi" type="button">Poslovi</button>
+    <button class="jezicak" data-jezicak="cijene" type="button">Cijene</button>
+  </nav>
+
+  <main class="omot">
+    <section id="dio-majstori">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <h1 style="margin:0">Majstori</h1>
+        <button id="dugme-nov-majstor" class="dugme mala" style="margin-left:auto">+ Nov majstor</button>
+      </div>
+      <div class="tabela-okvir">
+        <table>
+          <thead>
+            <tr>
+              <th>Ime</th><th>Telefon</th><th>Kupio</th>
+              <th>Dug</th><th>Limit</th><th>Platio</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="red-majstori"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="dio-prihvaceni" hidden>
+      <h1>Ko je šta uzeo</h1>
+      <p class="tiho">Upiši ime majstora pa vidiš sve što je kupio. Može i broj klijenta ili ulica.</p>
+      <label class="polje">
+        <span>Pretraga</span>
+        <input id="trazi" placeholder="npr. Marko" autocomplete="off">
+      </label>
+      <div id="lista-prihvaceni"></div>
+    </section>
+
+    <section id="dio-problemi" hidden>
+      <h1>Problemi sa poslovima</h1>
+      <p class="tiho">Majstori koji su javili da nešto ne valja. Riješi tako što vratiš posao u ponudu ili ga obrišeš.</p>
+      <div id="lista-problemi"></div>
+    </section>
+
+    <section id="dio-poslovi" hidden>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <h1 style="margin:0">Poslovi</h1>
+        <button id="dugme-nov-posao" class="dugme mala" style="margin-left:auto">+ Nov posao</button>
+      </div>
+      <div id="lista-poslovi"></div>
+    </section>
+
+    <section id="dio-cijene" hidden>
+      <h1>Cijene po kategoriji</h1>
+      <p class="tiho">Koliko majstor plaća da otključa posao iz te kategorije.</p>
+      <div id="lista-cijena"></div>
+      <button id="dugme-sacuvaj-cijene" class="dugme" style="margin-top:14px">Sačuvaj cijene</button>
+      <div id="poruka-cijene" style="margin-top:12px"></div>
+    </section>
+  </main>
+</div>
+
+<script src="admin.js"></script>
+</body>
+</html>

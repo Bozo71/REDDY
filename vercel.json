@@ -3,9 +3,15 @@
   "outputDirectory": "dist/client",
   "cleanUrls": true,
   "rewrites": [
+    { "source": "/majstori", "destination": "/majstori/index.html" },
+    { "source": "/majstori/", "destination": "/majstori/index.html" },
+    { "source": "/majstori/admin", "destination": "/majstori/admin.html" },
+    { "source": "/((?!api/|majstori).*)", "destination": "/index.html" }
+  ],
+  "headers": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "source": "/majstori/sw.js",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
     }
   ]
 }

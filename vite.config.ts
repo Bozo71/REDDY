@@ -9,6 +9,16 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { USLUGE_STRANICE } from "./src/usluge";
 
 export default defineConfig({
+  // Samo za rad na računaru: /api ide na sistem za majstore pokrenut na 3000.
+  // Na Vercelu ovo ne vrijedi — tamo je /api serverless funkcija iz api/.
+  vite: {
+    server: {
+      proxy: {
+        "/api": { target: "http://localhost:3000", changeOrigin: true },
+      },
+    },
+  },
+
   tanstackStart: {
     // Stranice usluga nisu linkovane sa početne, pa ih crawlLinks ne bi našao.
     // Bez ovoga bi Google na njima vidio prazan shell umjesto teksta.

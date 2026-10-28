@@ -126,6 +126,60 @@ const bezKvacica = (s: string) =>
 // Prijave stižu na adresu koju upišeš pri pravljenju ključa (info@thereddy.me).
 const WEB3FORMS_KLJUC = "7d98c57c-5c56-46c3-9e59-21c71d9da1dd";
 
+/* ── Sistem za majstore ────────────────────────────────────────────────────
+   Zahtjev prvo ide u sistem, gdje ga majstori te struke odmah vide. Mail se
+   šalje samo ako sistem ne odgovori — da se nijedan klijent ne izgubi ako
+   sistem ikad stane.
+
+   Sistem stoji na istom domenu, pod /api, pa adresa nije potrebna. Prazno
+   znači „isti sajt". Postavlja se samo ako se sistem ikad odvoji drugdje. */
+const MAJSTORI_API = import.meta.env.VITE_MAJSTORI_API ?? "";
+
+// Nazivi sa sajta → oznake kategorija u sistemu.
+const KATEGORIJA_U_SISTEMU: Record<string, string> = {
+  "Vodoinstalater": "vodoinstalater",
+  "Električar": "elektricar",
+  "Moleraj": "moler",
+  "Fasada": "fasader",
+  "Keramičar": "keramicar",
+  "Klima i grijanje": "klime",
+  "Bravar": "bravar",
+  "Kamere i alarmi": "sigurnost",
+  "Nešto drugo": "kucne_popravke",
+};
+
+/** Vraća true samo ako je sistem stvarno primio zahtjev. */
+async function posaljiUSistem(p: Prijava, linkovi: string[]): Promise<boolean> {
+  try {
+    const odgovor = await fetch(`${MAJSTORI_API}/api/zahtjev`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(7000),
+      body: JSON.stringify({
+        kategorija: KATEGORIJA_U_SISTEMU[p.problem] ?? "kucne_popravke",
+        opis: p.opis,
+        ime: p.ime,
+        prezime: p.prezime,
+        email: p.email,
+        telefon: p.telefon,
+        adresa: p.adresa,
+        stan: p.stan,
+        fotografije: linkovi,
+        izvor: "sajt",
+      }),
+    });
+
+    if (!odgovor.ok) {
+      console.warn("[REDDY] Sistem je odbio zahtjev:", odgovor.status);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.warn("[REDDY] Sistem nije dostupan, šaljem na mail:", e);
+    return false;
+  }
+}
+
 interface Prijava {
   problem: string;
   opis: string;
@@ -342,6 +396,13 @@ async function posaljiPrijavu(p: Prijava, fajlovi: File[] = []): Promise<void> {
   } catch { /* localStorage nedostupan */ }
 
   console.log(`[REDDY] Nova prijava:\n\n${poruka}`);
+
+  /* Sistem ima prednost — tamo je majstor vidi odmah. Mail ide samo kad
+     sistem ćuti, da zahtjev ne nestane. */
+  if (await posaljiUSistem(p, linkovi)) {
+    console.log("[REDDY] Zahtjev je u sistemu za majstore.");
+    return;
+  }
 
   if (!WEB3FORMS_KLJUC) {
     console.warn("[REDDY] WEB3FORMS_KLJUC je prazan — prijava nije poslata na mail.");

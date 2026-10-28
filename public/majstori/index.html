@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="sr-Latn-ME">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2B2640">
+<title>REDDY — Poslovi</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="ikona-192.png">
+<link rel="apple-touch-icon" href="ikona-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="REDDY">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;900&display=swap">
+<link rel="stylesheet" href="stil.css">
+</head>
+<body>
+
+<!-- ── Prijava ── -->
+<div id="ekran-prijava" class="prijava-ekran plum-pozadina">
+  <div class="prijava-kutija">
+    <div class="prijava-logo">
+      <img src="ikona-192.png" alt="">
+      <div>REDDY</div>
+      <div class="tiho" style="font-size:13px;font-weight:700">Poslovi za majstore</div>
+    </div>
+
+    <div id="greska-prijava"></div>
+
+    <form id="forma-prijava">
+      <label class="polje">
+        <span>Broj telefona</span>
+        <input id="p-telefon" type="tel" inputmode="tel" autocomplete="username"
+               placeholder="067 111 111" required>
+      </label>
+      <label class="polje">
+        <span>PIN</span>
+        <input id="p-pin" type="password" inputmode="numeric" autocomplete="current-password"
+               placeholder="••••••" required>
+      </label>
+      <button class="dugme" type="submit">Uđi</button>
+    </form>
+  </div>
+</div>
+
+<!-- ── Aplikacija ── -->
+<div id="ekran-app" hidden>
+  <header class="vrh">
+    <div class="logo"><img src="ikona-192.png" alt=""> REDDY</div>
+    <div class="vrh-desno">
+      <button id="dugme-zvono" class="dugme tiha mala" type="button" title="Uključi obavještenja">Obavještenja</button>
+      <button id="dugme-izlaz" class="dugme tiha mala" type="button">Izađi</button>
+    </div>
+  </header>
+
+  <div class="stanje-traka">
+    <div class="stanje-stavka">
+      <span class="stanje-ime">Majstor</span>
+      <span class="stanje-broj" id="s-ime" style="font-size:15px">—</span>
+    </div>
+    <div class="stanje-stavka">
+      <span class="stanje-ime">Kupljeno</span>
+      <span class="stanje-broj" id="s-kupljeno">0</span>
+    </div>
+    <div class="stanje-stavka">
+      <span class="stanje-ime">Dug</span>
+      <span class="stanje-broj" id="s-dug">0 €</span>
+    </div>
+    <div class="stanje-stavka">
+      <span class="stanje-ime">Limit</span>
+      <span class="stanje-broj" id="s-limit">0 €</span>
+    </div>
+  </div>
+
+  <nav class="jezicci">
+    <button class="jezicak izabran" data-jezicak="poslovi" type="button">Novi poslovi</button>
+    <button class="jezicak" data-jezicak="moji" type="button">Moji poslovi</button>
+  </nav>
+
+  <main class="omot">
+    <div id="obavjestenje"></div>
+    <div id="lista-poslovi"></div>
+    <div id="lista-moji" hidden></div>
+  </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

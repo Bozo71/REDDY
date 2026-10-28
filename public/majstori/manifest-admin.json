@@ -1,0 +1,16 @@
+{
+  "name": "REDDY Admin",
+  "short_name": "REDDY Admin",
+  "description": "Majstori, dugovi i poslovi.",
+  "start_url": "/majstori/admin.html",
+  "scope": "/majstori/",
+  "display": "standalone",
+  "background_color": "#1C1829",
+  "theme_color": "#2B2640",
+  "lang": "sr-Latn-ME",
+  "icons": [
+    { "src": "/majstori/ikona-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/majstori/ikona-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/majstori/ikona-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
