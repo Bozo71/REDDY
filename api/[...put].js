@@ -236,7 +236,7 @@ const rute = {
 
   /* ── Admin ── */
 
-  "POST /api/admin/prijava": async (req, res) => {
+  "POST /api/admin-prijava": async (req, res) => {
     const t = await tijelo(req);
     const a = await citajJedan(
       "admini", `nadimak=eq.${encodeURIComponent(String(t.nadimak ?? "").trim())}`,
@@ -247,7 +247,7 @@ const rute = {
     posalji(res, 200, { token: await napraviSesiju("admin", a.id), nadimak: a.nadimak });
   },
 
-  "GET /api/admin/majstori": async (req, res) => {
+  "GET /api/admin-majstori": async (req, res) => {
     if (!(await trazenAdmin(req, res))) return;
     const redovi = await citaj("stanje_majstora", "select=*&order=ime.asc");
     posalji(res, 200, {
@@ -263,7 +263,7 @@ const rute = {
     });
   },
 
-  "POST /api/admin/majstor": async (req, res) => {
+  "POST /api/admin-majstor": async (req, res) => {
     if (!(await trazenAdmin(req, res))) return;
     const t = await tijelo(req);
     const telefon = normalizujTelefon(t.telefon);
@@ -284,7 +284,7 @@ const rute = {
     posalji(res, 201, { ok: true, id: m.id });
   },
 
-  "POST /api/admin/majstor-izmjena": async (req, res) => {
+  "POST /api/admin-majstor-izmjena": async (req, res) => {
     if (!(await trazenAdmin(req, res))) return;
     const t = await tijelo(req);
 
@@ -298,7 +298,7 @@ const rute = {
     posalji(res, 200, { ok: true });
   },
 
-  "POST /api/admin/uplata": async (req, res) => {
+  "POST /api/admin-uplata": async (req, res) => {
     if (!(await trazenAdmin(req, res))) return;
     const t = await tijelo(req);
 
@@ -314,7 +314,7 @@ const rute = {
     posalji(res, 200, { ok: true, stanje: await stanjeMajstora(t.majstor_id) });
   },
 
-  "GET /api/admin/poslovi": async (req, res) => {
+  "GET /api/admin-poslovi": async (req, res) => {
     if (!(await trazenAdmin(req, res))) return;
     const redovi = await citaj(
       "poslovi",
@@ -339,7 +339,7 @@ const rute = {
     });
   },
 
-  "POST /api/admin/posao": async (req, res) => {
+  "POST /api/admin-posao": async (req, res) => {
     if (!(await trazenAdmin(req, res))) return;
     const t = await tijelo(req);
     const telefon = normalizujTelefon(t.telefon);
@@ -369,7 +369,7 @@ const rute = {
   },
 
   // Reklamacija: kupovina se poništi, dug padne, posao se opet nudi.
-  "POST /api/admin/ponisti": async (req, res) => {
+  "POST /api/admin-ponisti": async (req, res) => {
     if (!(await trazenAdmin(req, res))) return;
     const { posao_id } = await tijelo(req);
 
@@ -386,7 +386,7 @@ const rute = {
     posalji(res, 200, { ok: true, stanje: await stanjeMajstora(k.majstor_id) });
   },
 
-  "GET /api/admin/prihvaceni": async (req, res) => {
+  "GET /api/admin-prihvaceni": async (req, res) => {
     if (!(await trazenAdmin(req, res))) return;
     const trazi = (new URL(req.url, "http://x").searchParams.get("trazi") ?? "")
       .trim().toLowerCase();
@@ -422,7 +422,7 @@ const rute = {
     posalji(res, 200, { prihvaceni });
   },
 
-  "GET /api/admin/problemi": async (req, res) => {
+  "GET /api/admin-problemi": async (req, res) => {
     if (!(await trazenAdmin(req, res))) return;
 
     const redovi = await citaj(
@@ -453,7 +453,7 @@ const rute = {
   },
 
   // Sređeno: majstor nastavlja posao, dug mu ostaje.
-  "POST /api/admin/problem-rijesen": async (req, res) => {
+  "POST /api/admin-problem-rijesen": async (req, res) => {
     if (!(await trazenAdmin(req, res))) return;
     const { id } = await tijelo(req);
 
@@ -467,7 +467,7 @@ const rute = {
     posalji(res, 200, { ok: true });
   },
 
-  "POST /api/admin/obrisi-posao": async (req, res) => {
+  "POST /api/admin-obrisi-posao": async (req, res) => {
     if (!(await trazenAdmin(req, res))) return;
     const { posao_id } = await tijelo(req);
 
@@ -486,7 +486,7 @@ const rute = {
     });
   },
 
-  "POST /api/admin/cjenovnik": async (req, res) => {
+  "POST /api/admin-cjenovnik": async (req, res) => {
     if (!(await trazenAdmin(req, res))) return;
     const t = await tijelo(req);
     for (const [kat, cijena] of Object.entries(t.cijene ?? {})) {
@@ -496,7 +496,7 @@ const rute = {
     posalji(res, 200, { ok: true });
   },
 
-  "GET /api/admin/izvod": async (req, res) => {
+  "GET /api/admin-izvod": async (req, res) => {
     if (!(await trazenAdmin(req, res))) return;
     const id = new URL(req.url, "http://x").searchParams.get("majstor");
 

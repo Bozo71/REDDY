@@ -29,7 +29,7 @@ el("forma-prijava").addEventListener("submit", async (e) => {
   e.preventDefault();
   el("greska-prijava").innerHTML = "";
   try {
-    const r = await api("/api/admin/prijava", {
+    const r = await api("/api/admin-prijava", {
       method: "POST",
       body: JSON.stringify({ nadimak: el("a-nadimak").value, sifra: el("a-sifra").value }),
     });
@@ -52,7 +52,7 @@ el("dugme-izlaz").addEventListener("click", () => {
 async function uđi() {
   // Prvo podaci, pa tek onda zamjena ekrana — ako token ne važi, ostaje prijava.
   kategorije = (await api("/api/kategorije")).kategorije;
-  const { majstori } = await api("/api/admin/majstori");
+  const { majstori } = await api("/api/admin-majstori");
 
   el("ekran-prijava").hidden = true;
   el("ekran-app").hidden = false;
@@ -65,7 +65,7 @@ async function uđi() {
 /* ── Majstori ── */
 
 async function ucitajMajstore() {
-  prikaziMajstore((await api("/api/admin/majstori")).majstori);
+  prikaziMajstore((await api("/api/admin-majstori")).majstori);
 }
 
 function prikaziMajstore(majstori) {
@@ -113,7 +113,7 @@ async function obrisiPosao(posaoId) {
     "skida mu se naplaćeni iznos sa duga.\n\nOvo se ne može vratiti.",
   )) return;
 
-  await api("/api/admin/obrisi-posao", {
+  await api("/api/admin-obrisi-posao", {
     method: "POST",
     body: JSON.stringify({ posao_id: posaoId }),
   });
@@ -121,7 +121,7 @@ async function obrisiPosao(posaoId) {
 }
 
 async function oznaciRijesenim(id) {
-  await api("/api/admin/problem-rijesen", { method: "POST", body: JSON.stringify({ id }) });
+  await api("/api/admin-problem-rijesen", { method: "POST", body: JSON.stringify({ id }) });
   await osvjeziTrenutni();
 }
 
@@ -135,9 +135,9 @@ async function osvjeziTrenutni() {
 }
 
 async function otvoriMajstora(id) {
-  const { majstori } = await api("/api/admin/majstori");
+  const { majstori } = await api("/api/admin-majstori");
   const m = majstori.find((x) => x.id === id);
-  const { kupovine, uplate } = await api(`/api/admin/izvod?majstor=${id}`);
+  const { kupovine, uplate } = await api(`/api/admin-izvod?majstor=${id}`);
 
   const prozor = document.createElement("div");
   prozor.className = "prekrivac";
@@ -208,7 +208,7 @@ async function otvoriMajstora(id) {
   prozor.querySelector("[data-uplati]").onclick = async () => {
     const iznos = Number(prozor.querySelector("#iznos-uplate").value);
     if (!(iznos > 0)) return alert("Upišite iznos veći od nule.");
-    await api("/api/admin/uplata", {
+    await api("/api/admin-uplata", {
       method: "POST",
       body: JSON.stringify({ majstor_id: id, iznos }),
     });
@@ -217,7 +217,7 @@ async function otvoriMajstora(id) {
   };
 
   prozor.querySelector("[data-sve]").onclick = async () => {
-    await api("/api/admin/uplata", {
+    await api("/api/admin-uplata", {
       method: "POST",
       body: JSON.stringify({ majstor_id: id, sve: true }),
     });
@@ -229,7 +229,7 @@ async function otvoriMajstora(id) {
     const struke = [...prozor.querySelectorAll(".kutija input:checked")].map((x) => x.value);
     if (!struke.length) return alert("Označite bar jednu struku, inače neće vidjeti nijedan posao.");
 
-    await api("/api/admin/majstor-izmjena", {
+    await api("/api/admin-majstor-izmjena", {
       method: "POST",
       body: JSON.stringify({
         id,
@@ -242,7 +242,7 @@ async function otvoriMajstora(id) {
   };
 
   prozor.querySelector("[data-pauza]").onclick = async () => {
-    await api("/api/admin/majstor-izmjena", {
+    await api("/api/admin-majstor-izmjena", {
       method: "POST",
       body: JSON.stringify({ id, pauziran: !m.pauziran }),
     });
@@ -282,7 +282,7 @@ el("dugme-nov-majstor").addEventListener("click", () => {
   prozor.querySelector("[data-da]").onclick = async () => {
     const izabrane = [...prozor.querySelectorAll(".kutija input:checked")].map((x) => x.value);
     try {
-      await api("/api/admin/majstor", {
+      await api("/api/admin-majstor", {
         method: "POST",
         body: JSON.stringify({
           ime: prozor.querySelector("#n-ime").value,
@@ -307,7 +307,7 @@ let tajmerPretrage = null;
 
 async function ucitajPrihvacene() {
   const trazi = el("trazi").value.trim();
-  const { prihvaceni } = await api(`/api/admin/prihvaceni?trazi=${encodeURIComponent(trazi)}`);
+  const { prihvaceni } = await api(`/api/admin-prihvaceni?trazi=${encodeURIComponent(trazi)}`);
 
   if (!prihvaceni.length) {
     el("lista-prihvaceni").innerHTML = trazi
@@ -372,7 +372,7 @@ el("trazi").addEventListener("input", () => {
 /* ── Problemi ── */
 
 async function ucitajProbleme() {
-  const { problemi } = await api("/api/admin/problemi");
+  const { problemi } = await api("/api/admin-problemi");
   obiljeziNove(problemi);
 
   if (!problemi.length) {
@@ -426,13 +426,13 @@ function obiljeziNove(problemi) {
 
 // Broj novih problema se vidi na jezičku i kad nisi u tom dijelu.
 async function osvjeziBrojProblema() {
-  try { obiljeziNove((await api("/api/admin/problemi")).problemi); } catch {}
+  try { obiljeziNove((await api("/api/admin-problemi")).problemi); } catch {}
 }
 
 /* ── Poslovi ── */
 
 async function ucitajPoslove() {
-  const { poslovi } = await api("/api/admin/poslovi");
+  const { poslovi } = await api("/api/admin-poslovi");
   if (!poslovi.length) {
     el("lista-poslovi").innerHTML = '<div class="prazno">Još nema poslova.</div>';
     return;
@@ -481,7 +481,7 @@ async function ponistiKupovinu(posaoId) {
     "majstorima te struke.",
   )) return;
 
-  await api("/api/admin/ponisti", { method: "POST", body: JSON.stringify({ posao_id: posaoId }) });
+  await api("/api/admin-ponisti", { method: "POST", body: JSON.stringify({ posao_id: posaoId }) });
   await osvjeziTrenutni();
 }
 
@@ -522,7 +522,7 @@ el("dugme-nov-posao").addEventListener("click", () => {
   prozor.querySelector("[data-da]").onclick = async () => {
     const uzmi = (id) => prozor.querySelector(id).value;
     try {
-      await api("/api/admin/posao", {
+      await api("/api/admin-posao", {
         method: "POST",
         body: JSON.stringify({
           kategorija: uzmi("#np-kat"), opis: uzmi("#np-opis"),
@@ -561,7 +561,7 @@ el("dugme-sacuvaj-cijene").addEventListener("click", async () => {
   document.querySelectorAll("[data-cijena]").forEach((i) => {
     cijene[i.dataset.cijena] = Number(i.value);
   });
-  await api("/api/admin/cjenovnik", { method: "POST", body: JSON.stringify({ cijene }) });
+  await api("/api/admin-cjenovnik", { method: "POST", body: JSON.stringify({ cijene }) });
   kategorije = (await api("/api/kategorije")).kategorije;
   el("poruka-cijene").innerHTML = '<div class="poruka dobro">Cijene su sačuvane.</div>';
   setTimeout(() => { el("poruka-cijene").innerHTML = ""; }, 2500);
