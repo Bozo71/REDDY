@@ -179,6 +179,7 @@ async function otvoriMajstora(id) {
         <button class="dugme" data-sacuvaj>Sačuvaj izmjene</button>
       </div>
       <div class="red-dugmadi">
+        <button class="dugme tiha" data-nov-pin>Novi PIN</button>
         <button class="dugme tiha" data-pauza>${m.pauziran ? "Vrati u rad" : "Pauziraj majstora"}</button>
       </div>
 
@@ -241,6 +242,19 @@ async function otvoriMajstora(id) {
     await ucitajMajstore();
   };
 
+  prozor.querySelector("[data-nov-pin]").onclick = async () => {
+    if (!confirm(
+      "Napraviti nov PIN?\n\nStari odmah prestaje da važi i majstor se " +
+      "izbacuje iz aplikacije dok mu ne javiš novi.",
+    )) return;
+
+    const r = await api("/api/admin-nov-pin", {
+      method: "POST", body: JSON.stringify({ id }),
+    });
+    zatvori();
+    pokaziPin(r);
+  };
+
   prozor.querySelector("[data-pauza]").onclick = async () => {
     await api("/api/admin-majstor-izmjena", {
       method: "POST",
@@ -248,6 +262,55 @@ async function otvoriMajstora(id) {
     });
     zatvori();
     await ucitajMajstore();
+  };
+}
+
+/* Pokazuje PIN jednom, sa gotovom porukom za majstora. Drugi put se ne
+   može vidjeti — pravi se nov. */
+function pokaziPin({ pin, ime, telefon }) {
+  const poruka =
+    `Zdravo ${String(ime ?? "").split(" ")[0]}, ovo su tvoji podaci za REDDY:\n\n` +
+    `Adresa: thereddy.me/majstori\n` +
+    `Telefon: ${formatBroj(telefon)}\n` +
+    `PIN: ${pin}\n\n` +
+    `Otvori na telefonu i dodaj na početni ekran da ti stoji kao aplikacija.`;
+
+  const prozor = document.createElement("div");
+  prozor.className = "prekrivac";
+  prozor.innerHTML = `
+    <div class="prozor">
+      <h3>Nov PIN za ${bezHtml(ime ?? "majstora")}</h3>
+      <div class="poruka pazi" style="text-align:center">
+        <div style="font-size:38px;font-weight:900;letter-spacing:7px;font-variant-numeric:tabular-nums">
+          ${bezHtml(pin)}
+        </div>
+      </div>
+      <p class="tiho" style="margin-top:0">
+        Zapiši ga ili odmah pošalji — kad zatvoriš ovaj prozor, više se ne može
+        vidjeti. Stari PIN je prestao da važi.
+      </p>
+      <label class="polje">
+        <span>Gotova poruka za majstora</span>
+        <textarea id="poruka-majstoru" readonly style="min-height:130px">${bezHtml(poruka)}</textarea>
+      </label>
+      <div class="red-dugmadi">
+        <button class="dugme" data-kopiraj>Kopiraj poruku</button>
+        <button class="dugme tiha" data-zatvori>Zatvori</button>
+      </div>
+    </div>`;
+  document.body.appendChild(prozor);
+
+  prozor.querySelector("[data-zatvori]").onclick = () => prozor.remove();
+  prozor.querySelector("[data-kopiraj]").onclick = async () => {
+    const dugme = prozor.querySelector("[data-kopiraj]");
+    const polje = prozor.querySelector("#poruka-majstoru");
+    try {
+      await navigator.clipboard.writeText(polje.value);
+      dugme.textContent = "Kopirano";
+    } catch {
+      polje.select();
+      dugme.textContent = "Označeno — pritisni Ctrl+C";
+    }
   };
 }
 
@@ -281,19 +344,23 @@ el("dugme-nov-majstor").addEventListener("click", () => {
   prozor.querySelector("[data-ne]").onclick = () => prozor.remove();
   prozor.querySelector("[data-da]").onclick = async () => {
     const izabrane = [...prozor.querySelectorAll(".kutija input:checked")].map((x) => x.value);
+    const ime = prozor.querySelector("#n-ime").value;
+    const telefon = prozor.querySelector("#n-telefon").value;
+    const pin = prozor.querySelector("#n-pin").value;
+
     try {
       await api("/api/admin-majstor", {
         method: "POST",
         body: JSON.stringify({
-          ime: prozor.querySelector("#n-ime").value,
-          telefon: prozor.querySelector("#n-telefon").value,
-          pin: prozor.querySelector("#n-pin").value,
+          ime, telefon, pin,
           limit_duga: prozor.querySelector("#n-limit").value,
           kategorije: izabrane,
         }),
       });
       prozor.remove();
       await ucitajMajstore();
+      // Odmah gotova poruka za majstora, da se PIN ne izgubi.
+      pokaziPin({ pin, ime, telefon });
     } catch (greska) {
       prozor.querySelector("#greska-majstor").innerHTML =
         `<div class="poruka lose">${greska.message}</div>`;

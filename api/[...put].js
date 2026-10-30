@@ -1,6 +1,8 @@
 /* Sve API rute, kao jedna Vercel funkcija.
    Lokalno isto radi — server.mjs ga poziva. */
 
+import { randomInt } from "node:crypto";
+
 import {
   KATEGORIJE, KLJUCEVI_FALE, citaj, citajJedan, upisi, izmijeni, obrisi, pozovi,
   hash, provjeriHash, normalizujTelefon, napraviSesiju, nadjiSesiju,
@@ -296,6 +298,23 @@ const rute = {
 
     await izmijeni("majstori", `id=eq.${t.id}`, izmjene);
     posalji(res, 200, { ok: true });
+  },
+
+  /* Nov PIN za majstora. Stari se ne može pročitati — čuva se samo otisak —
+     pa kad ga majstor zaboravi, pravi se nov i pokaže jednom. */
+  "POST /api/admin-nov-pin": async (req, res) => {
+    if (!(await trazenAdmin(req, res))) return;
+    const { id } = await tijelo(req);
+
+    const m = await citajJedan("majstori", `id=eq.${id}`);
+    if (!m) return greska(res, 404, "Majstor ne postoji.");
+
+    const pin = String(randomInt(100000, 1000000));   // šest cifara
+    await izmijeni("majstori", `id=eq.${id}`, { pin_hash: hash(pin) });
+    // Stare prijave se gase, da stari PIN odmah prestane da važi.
+    await obrisi("sesije", `vrsta=eq.majstor&ko_id=eq.${id}`);
+
+    posalji(res, 200, { ok: true, pin, ime: m.ime, telefon: m.telefon });
   },
 
   "POST /api/admin-uplata": async (req, res) => {
