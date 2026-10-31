@@ -2,10 +2,10 @@
    Namjerno ne kešira podatke: poslovi se mijenjaju u minut, a majstor
    nikad ne smije vidjeti stari spisak. Kešira samo izgled aplikacije. */
 
-const KES = "reddy-majstori-v2";
+const KES = "reddy-majstori-v3";
 const OKVIR = [
   "/majstori/", "/majstori/index.html", "/majstori/stil.css", "/majstori/app.js", "/majstori/ikona-192.png", "/majstori/manifest.json",
-  "/majstori/admin.html", "/majstori/admin.js", "/majstori/manifest-admin.json",
+  "/majstori/admin.html", "/majstori/admin.js", "/majstori/manifest-admin.json", "/majstori/push-klijent.js",
 ];
 
 self.addEventListener("install", (e) => {
@@ -38,9 +38,9 @@ self.addEventListener("fetch", (e) => {
   );
 });
 
-// Push obavještenje o novom poslu.
+// Obavještenje o novom poslu.
 self.addEventListener("push", (e) => {
-  let podaci = { naslov: "REDDY", tekst: "Stigao je nov posao." };
+  let podaci = { naslov: "REDDY", tekst: "Stigao je nov posao.", putanja: "/majstori" };
   try { podaci = { ...podaci, ...e.data.json() }; } catch {}
 
   e.waitUntil(
@@ -49,17 +49,27 @@ self.addEventListener("push", (e) => {
       icon: "/majstori/ikona-192.png",
       badge: "/majstori/ikona-192.png",
       vibrate: [120, 60, 120],
-      tag: "nov-posao",
+      data: { putanja: podaci.putanja },
+      // Bez tag-a: dva posla u istom minutu moraju dati dva obavještenja,
+      // inače drugo tiho pregazi prvo.
+      renotify: false,
     }),
   );
 });
 
 self.addEventListener("notificationclick", (e) => {
   e.notification.close();
+  const putanja = e.notification.data?.putanja ?? "/majstori";
+
   e.waitUntil(
-    self.clients.matchAll({ type: "window" }).then((lista) => {
-      for (const k of lista) if (k.url.includes(self.location.origin)) return k.focus();
-      return self.clients.openWindow("/majstori/");
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((lista) => {
+      // Ako je aplikacija već otvorena, prebaci je na pravu stranicu.
+      for (const k of lista) {
+        if (k.url.includes(self.location.origin)) {
+          return k.navigate ? k.navigate(putanja).then((x) => x?.focus()) : k.focus();
+        }
+      }
+      return self.clients.openWindow(putanja);
     }),
   );
 });

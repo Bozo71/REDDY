@@ -50,16 +50,19 @@ el("dugme-izlaz").addEventListener("click", () => {
 });
 
 async function uđi() {
-  // Prvo podaci, pa tek onda zamjena ekrana — ako token ne važi, ostaje prijava.
-  kategorije = (await api("/api/kategorije")).kategorije;
-  const { majstori } = await api("/api/admin-majstori");
+  // Oba poziva uporedo — ne čekaju jedan drugog.
+  const [kat, maj] = await Promise.all([
+    api("/api/kategorije"),
+    api("/api/admin-majstori"),
+  ]);
+  kategorije = kat.kategorije;
 
   el("ekran-prijava").hidden = true;
   el("ekran-app").hidden = false;
 
-  prikaziMajstore(majstori);
-  await osvjeziBrojProblema();
+  prikaziMajstore(maj.majstori);
   pratiDogadjaje();
+  osvjeziBrojProblema().catch(() => {});   // ne drži ekran
 }
 
 /* ── Majstori ── */
@@ -125,19 +128,23 @@ async function oznaciRijesenim(id) {
   await osvjeziTrenutni();
 }
 
-// Osvježi samo onaj dio koji je trenutno otvoren.
+// Osvježi samo otvoreni dio, i to uporedo sa brojačem problema —
+// čekanje jednog pa drugog se na telefonu osjeti.
 async function osvjeziTrenutni() {
-  if (!el("dio-majstori").hidden) await ucitajMajstore();
-  if (!el("dio-prihvaceni").hidden) await ucitajPrihvacene();
-  if (!el("dio-problemi").hidden) await ucitajProbleme();
-  if (!el("dio-poslovi").hidden) await ucitajPoslove();
-  await osvjeziBrojProblema();
+  const poslovi = [];
+  if (!el("dio-majstori").hidden) poslovi.push(ucitajMajstore());
+  if (!el("dio-prihvaceni").hidden) poslovi.push(ucitajPrihvacene());
+  if (!el("dio-problemi").hidden) poslovi.push(ucitajProbleme());
+  if (!el("dio-poslovi").hidden) poslovi.push(ucitajPoslove());
+  poslovi.push(osvjeziBrojProblema());
+
+  await Promise.allSettled(poslovi);
 }
 
 async function otvoriMajstora(id) {
-  const { majstori } = await api("/api/admin-majstori");
-  const m = majstori.find((x) => x.id === id);
-  const { kupovine, uplate } = await api(`/api/admin-izvod?majstor=${id}`);
+  // Jedan poziv — izvod nosi i podatke majstora.
+  const { kupovine, uplate, majstor: m } = await api(`/api/admin-izvod?majstor=${id}`);
+  if (!m) return alert("Majstor nije nađen.");
 
   const prozor = document.createElement("div");
   prozor.className = "prekrivac";
@@ -705,6 +712,35 @@ function poslova(n) {
   if (zadnja >= 2 && zadnja <= 4) return `${n} posla`;
   return `${n} poslova`;
 }
+
+/* ── Obavještenja ── */
+
+el("dugme-zvono").addEventListener("click", async () => {
+  const dugme = el("dugme-zvono");
+  const staro = dugme.textContent;
+  dugme.disabled = true;
+  dugme.textContent = "Uključujem…";
+
+  try {
+    const r = await ukljuciPush(api);
+    if (!r.ok) {
+      alert(r.razlog);
+      dugme.textContent = staro;
+      return;
+    }
+    dugme.textContent = "Obavještenja ✓";
+    await api("/api/push-proba", { method: "POST" });
+  } catch (greska) {
+    alert(greska.message);
+    dugme.textContent = staro;
+  } finally {
+    dugme.disabled = false;
+  }
+});
+
+pushUkljucen().then((da) => {
+  if (da) el("dugme-zvono").textContent = "Obavještenja ✓";
+}).catch(() => {});
 
 /* Bez service workera nema „dodaj na početni ekran". */
 if ("serviceWorker" in navigator) {

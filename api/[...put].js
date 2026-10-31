@@ -4,6 +4,10 @@
 import { randomInt } from "node:crypto";
 
 import {
+  javniKljuc, zapamtiPretplatu, zaboraviPretplatu, javiZaNovPosao, posaljiProbu,
+} from "../push.mjs";
+
+import {
   KATEGORIJE, KLJUCEVI_FALE, citaj, citajJedan, upisi, izmijeni, obrisi, pozovi,
   hash, provjeriHash, normalizujTelefon, napraviSesiju, nadjiSesiju,
   obrisiSesiju, stanjeMajstora, cijenaKategorije, sada,
@@ -78,6 +82,38 @@ const rute = {
     posalji(res, 200, {
       kategorije: KATEGORIJE.map((k) => ({ ...k, cijena: mapa[k.id] ?? k.cijena })),
     });
+  },
+
+  /* ── Obavještenja ── */
+
+  "GET /api/push-kljuc": async (req, res) => {
+    posalji(res, 200, { kljuc: javniKljuc() });
+  },
+
+  // Ko se pretplaćuje poznaje se po tokenu — majstor ili admin.
+  "POST /api/push-prijava": async (req, res) => {
+    const s = await nadjiSesiju(tokenIz(req));
+    if (!s) return greska(res, 401, "Niste prijavljeni.");
+
+    const { pretplata } = await tijelo(req);
+    try {
+      await zapamtiPretplatu(s.vrsta, s.ko_id, pretplata);
+      posalji(res, 200, { ok: true });
+    } catch (e) {
+      greska(res, 400, e.message);
+    }
+  },
+
+  "POST /api/push-odjava": async (req, res) => {
+    const { endpoint } = await tijelo(req);
+    if (endpoint) await zaboraviPretplatu(endpoint).catch(() => {});
+    posalji(res, 200, { ok: true });
+  },
+
+  "POST /api/push-proba": async (req, res) => {
+    const s = await nadjiSesiju(tokenIz(req));
+    if (!s) return greska(res, 401, "Niste prijavljeni.");
+    posalji(res, 200, await posaljiProbu(s.vrsta, s.ko_id));
   },
 
   /* ── Majstor ── */
@@ -233,6 +269,9 @@ const rute = {
       telefon,
     });
 
+    // Javlja majstorima te struke i tebi. Ako padne, zahtjev svejedno prolazi.
+    await javiZaNovPosao(posao).catch(() => {});
+
     posalji(res, 201, { ok: true, id: posao.id });
   },
 
@@ -384,6 +423,8 @@ const rute = {
       prezime: t.prezime ?? null, email: t.email ?? null, telefon,
     });
 
+    await javiZaNovPosao(posao).catch(() => {});
+
     posalji(res, 201, { ok: true, id: posao.id });
   },
 
@@ -515,6 +556,8 @@ const rute = {
     posalji(res, 200, { ok: true });
   },
 
+  /* Izvod nosi i podatke majstora, da panel ne mora da ga traži posebnim
+     pozivom — na mobilnoj vezi se svaki poziv osjeti. */
   "GET /api/admin-izvod": async (req, res) => {
     if (!(await trazenAdmin(req, res))) return;
     const id = new URL(req.url, "http://x").searchParams.get("majstor");
@@ -531,7 +574,20 @@ const rute = {
       "uplate", `majstor_id=eq.${id}&order=vrijeme.desc&limit=100&select=vrijeme,iznos,napomena`,
     )).map((u) => ({ ...u, iznos: Number(u.iznos) }));
 
-    posalji(res, 200, { kupovine, uplate, stanje: await stanjeMajstora(id) });
+    const m = await citajJedan("stanje_majstora", `id=eq.${id}`);
+
+    posalji(res, 200, {
+      kupovine,
+      uplate,
+      majstor: m ? {
+        id: m.id, ime: m.ime, telefon: m.telefon,
+        kategorije: Array.isArray(m.kategorije) ? m.kategorije : [],
+        limit_duga: Number(m.limit_duga), pauziran: m.pauziran,
+        kupljeno: Number(m.kupljeno),
+        ukupno_placeno: Number(m.ukupno_placeno),
+        dug: Number(m.dug),
+      } : null,
+    });
   },
 };
 

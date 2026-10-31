@@ -341,13 +341,33 @@ function pratiDogadjaje() {
 /* ── Obavještenja i PWA ── */
 
 el("dugme-zvono").addEventListener("click", async () => {
-  if (!("Notification" in window)) return alert("Ovaj pregledač ne podržava obavještenja.");
-  const dozvola = await Notification.requestPermission();
-  if (dozvola === "granted") {
-    el("dugme-zvono").textContent = "Obavještenja ✓";
-    new Notification("REDDY", { body: "Javićemo vam kad stigne nov posao.", icon: "ikona-192.png" });
+  const dugme = el("dugme-zvono");
+  const staro = dugme.textContent;
+  dugme.disabled = true;
+  dugme.textContent = "Uključujem…";
+
+  try {
+    const r = await ukljuciPush(api);
+    if (!r.ok) {
+      poruka("obavjestenje", r.razlog, "pazi");
+      dugme.textContent = staro;
+      return;
+    }
+    dugme.textContent = "Obavještenja ✓";
+    await api("/api/push-proba", { method: "POST" });
+    poruka("obavjestenje", "Obavještenja su uključena. Stiže vam probna poruka.", "dobro");
+  } catch (greska) {
+    poruka("obavjestenje", greska.message, "lose");
+    dugme.textContent = staro;
+  } finally {
+    dugme.disabled = false;
   }
 });
+
+// Ako su već uključena, dugme to odmah pokazuje.
+pushUkljucen().then((da) => {
+  if (da) el("dugme-zvono").textContent = "Obavještenja ✓";
+}).catch(() => {});
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/majstori/sw.js").catch(() => {});
