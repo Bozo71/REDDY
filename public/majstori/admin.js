@@ -42,14 +42,18 @@ el("forma-prijava").addEventListener("submit", async (e) => {
   }
 });
 
-el("dugme-izlaz").addEventListener("click", () => {
-  token = null;
-  try { localStorage.removeItem(KLJUC); } catch {}
-  el("ekran-app").hidden = true;
-  el("ekran-prijava").hidden = false;
-});
+el("dugme-izlaz").addEventListener("click", naPrijavu);
 
-async function uđi() {
+/* `odmah` je za otvaranje sa početnog ekrana — panel se prikazuje istog
+   trena, bez bljeska ekrana za prijavu dok server odgovara. */
+async function uđi(odmah = false) {
+  if (odmah) {
+    el("ekran-prijava").hidden = true;
+    el("ekran-app").hidden = false;
+    el("red-majstori").innerHTML =
+      '<tr><td colspan="7" style="opacity:.5;font-weight:700">Učitavam…</td></tr>';
+  }
+
   // Oba poziva uporedo — ne čekaju jedan drugog.
   const [kat, maj] = await Promise.all([
     api("/api/kategorije"),
@@ -63,6 +67,14 @@ async function uđi() {
   prikaziMajstore(maj.majstori);
   pratiDogadjaje();
   osvjeziBrojProblema().catch(() => {});   // ne drži ekran
+}
+
+function naPrijavu() {
+  token = null;
+  try { localStorage.removeItem(KLJUC); } catch {}
+  document.documentElement.classList.remove("vec-prijavljen");
+  el("ekran-prijava").hidden = false;
+  el("ekran-app").hidden = true;
 }
 
 /* ── Majstori ── */
@@ -750,10 +762,7 @@ if ("serviceWorker" in navigator) {
 /* ── Start ── */
 
 if (token) {
-  uđi().catch(() => {
-    token = null;
-    try { localStorage.removeItem(KLJUC); } catch {}
-    el("ekran-prijava").hidden = false;
-    el("ekran-app").hidden = true;
-  });
+  uđi(true).catch(naPrijavu);
+} else {
+  document.documentElement.classList.remove("vec-prijavljen");
 }

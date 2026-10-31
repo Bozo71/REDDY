@@ -2,7 +2,7 @@
    Namjerno ne kešira podatke: poslovi se mijenjaju u minut, a majstor
    nikad ne smije vidjeti stari spisak. Kešira samo izgled aplikacije. */
 
-const KES = "reddy-majstori-v3";
+const KES = "reddy-majstori-v4";
 const OKVIR = [
   "/majstori/", "/majstori/index.html", "/majstori/stil.css", "/majstori/app.js", "/majstori/ikona-192.png", "/majstori/manifest.json",
   "/majstori/admin.html", "/majstori/admin.js", "/majstori/manifest-admin.json", "/majstori/push-klijent.js",

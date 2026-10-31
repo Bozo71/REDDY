@@ -57,16 +57,21 @@ el("forma-prijava").addEventListener("submit", async (e) => {
 
 el("dugme-izlaz").addEventListener("click", async () => {
   try { await api("/api/odjava", { method: "POST" }); } catch {}
-  token = null;
-  try { localStorage.removeItem(KLJUC); } catch {}
-  el("ekran-app").hidden = true;
-  el("ekran-prijava").hidden = false;
+  naPrijavu();
 });
 
 /* ── Ulazak ── */
 
-async function uđi() {
-  // Prvo podaci, pa zamjena ekrana — ako token ne važi, ostaje prijava.
+/* `odmah` je za otvaranje sa početnog ekrana: tad je čovjek već prijavljen,
+   pa se aplikacija prikazuje istog trena, a podaci stižu u nju. Kod svježe
+   prijave je obrnuto — čeka se odgovor, da ekran ne odskoči ako PIN ne valja. */
+async function uđi(odmah = false) {
+  if (odmah) {
+    el("ekran-prijava").hidden = true;
+    el("ekran-app").hidden = false;
+    el("lista-poslovi").innerHTML = '<div class="prazno">Učitavam…</div>';
+  }
+
   jaPodaci = await api("/api/ja");
 
   el("ekran-prijava").hidden = true;
@@ -75,6 +80,15 @@ async function uđi() {
   prikaziStanje();
   await ucitajPoslove();
   pratiDogadjaje();
+}
+
+/** Vraća na prijavu — kad token istekne ili se čovjek odjavi. */
+function naPrijavu() {
+  token = null;
+  try { localStorage.removeItem(KLJUC); } catch {}
+  document.documentElement.classList.remove("vec-prijavljen");
+  el("ekran-prijava").hidden = false;
+  el("ekran-app").hidden = true;
 }
 
 async function osvjeziStanje() {
@@ -397,10 +411,7 @@ function formatBroj(b) {
 /* ── Start ── */
 
 if (token) {
-  uđi().catch(() => {
-    token = null;
-    try { localStorage.removeItem(KLJUC); } catch {}
-    el("ekran-prijava").hidden = false;
-    el("ekran-app").hidden = true;
-  });
+  uđi(true).catch(naPrijavu);
+} else {
+  document.documentElement.classList.remove("vec-prijavljen");
 }

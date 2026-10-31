@@ -23,6 +23,11 @@
    i sakriveni ekran ostane vidljiv ispod. */
 [hidden] { display: none !important; }
 
+/* Kad se aplikacija otvori sa početnog ekrana, čovjek je već prijavljen.
+   Ekran za prijavu se tad ne smije pojaviti ni na tren dok server
+   odgovara — zato se sakriva prije prvog crtanja. */
+html.vec-prijavljen #ekran-prijava { display: none !important; }
+
 html, body { margin: 0; padding: 0; }
 
 body {
