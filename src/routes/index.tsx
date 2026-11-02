@@ -612,26 +612,32 @@ function Naslovna({
   return (
     <div className="app-gradient min-h-screen pb-24 sm:pb-16">
 
-      {/* ── 2. HERO ── */}
-      <section ref={heroRef} className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-12 text-center scroll-mt-24">
-        <h1 className="text-[28px] sm:text-[44px] leading-[1.08] font-black tracking-tight">
+      {/* ── 2. HERO — tamna scena, prvo što se vidi ── */}
+      <div className="hero-scena">
+        <span aria-hidden className="hero-svjetlo" />
+        <span aria-hidden className="hero-mreza" />
+
+      <section ref={heroRef} className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-16 sm:pt-28 pb-14 sm:pb-20 text-center scroll-mt-24">
+        {/* clamp umjesto fiksnih koraka — naslov nikad ne prelijeva, ni na
+            uskom telefonu ni na širokom ekranu. */}
+        <h1 className="ulaz-1 text-[clamp(2.05rem,6.2vw,4.4rem)] leading-[1.02] font-black tracking-[-0.04em] text-white">
           {naslovGore ?? "Javite šta ne radi."}
           <br />
-          <span className="text-[var(--sunshine-deep)]">
+          <span className="naslov-sjaj">
             {naslovDolje ?? "Dalje vodimo mi."}
           </span>
         </h1>
-        <p className="mt-3 text-[14px] sm:text-[16px] font-semibold text-[var(--plum-deep)]/65 max-w-xl mx-auto leading-relaxed">
+        <p className="ulaz-2 mt-5 sm:mt-7 text-[15px] sm:text-[17px] font-semibold text-white/55 max-w-[46ch] mx-auto leading-relaxed">
           {podnaslov ??
             "Voda, struja, moleraj, fasada. Cijela Podgorica. Šaljemo svog čovjeka, a za urađeno odgovaramo mi. Ne on."}
         </p>
 
-        <div className="mt-7 max-w-3xl mx-auto rounded-3xl bg-white border border-[var(--beige-border)] shadow-soft p-2.5 flex flex-col sm:flex-row gap-2">
+        <div className="ulaz-3 mt-8 sm:mt-10 max-w-3xl mx-auto rounded-3xl staklo p-2.5 flex flex-col sm:flex-row gap-2 shadow-[0_28px_60px_-28px_rgba(0,0,0,0.8)]">
           {/* Adresa */}
           <div className="relative flex-1">
             <div
-              className={`flex items-center gap-2 rounded-2xl bg-[var(--cream)] border px-4 h-12 focus-within:border-[var(--sunshine-deep)] transition ${
-                istakni ? "border-[var(--sunshine-deep)] shadow-glow" : "border-[var(--beige-border)]"
+              className={`flex items-center gap-2 rounded-2xl bg-white border px-4 h-12 focus-within:border-[var(--sunshine-deep)] transition ${
+                istakni ? "border-[var(--sunshine-deep)] shadow-glow" : "border-transparent"
               }`}
             >
               <MapPin className="w-4.5 h-4.5 text-[var(--plum-deep)]/45 shrink-0" />
@@ -672,7 +678,7 @@ function Naslovna({
           <div className="relative sm:w-56">
             <button
               onClick={() => setPadajuciOtvoren((v) => !v)}
-              className="w-full flex items-center justify-between gap-2 rounded-2xl bg-[var(--cream)] border border-[var(--beige-border)] px-4 h-12 text-[13px] font-extrabold"
+              className="w-full flex items-center justify-between gap-2 rounded-2xl bg-white border border-transparent px-4 h-12 text-[13px] font-extrabold"
             >
               <span className="flex items-center gap-2 truncate">
                 <Wrench className="w-4 h-4 text-[var(--plum-deep)]/45 shrink-0" /> {problem}
@@ -699,17 +705,18 @@ function Naslovna({
           <DugmeJaviteKvar onClick={otvoriFormu} klasa="h-12 px-7 text-[14px] shrink-0" />
         </div>
 
-        <p className="mt-3 text-[12.5px] font-bold text-[var(--plum-deep)]/55">
+        <p className="ulaz-3 mt-4 text-[12.5px] font-bold text-white/45">
           Hitno je?{" "}
-          <a href={TELEFON_LINK} className="font-black text-[var(--sunshine-deep)] hover:underline">
+          <a href={TELEFON_LINK} className="font-black text-[var(--sunshine)] hover:underline">
             Zovite {TELEFON}
           </a>
         </p>
       </section>
+      </div>
 
       {/* ── 3. BLOK PUNE ŠIRINE ── */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 mt-10">
-        <div className="plum-gradient rounded-3xl p-6 sm:p-10 shadow-soft text-white">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-12">
+        <div className="plum-scena rounded-3xl p-6 sm:p-10 shadow-soft text-white">
           <div className="max-w-2xl">
             <h2 className="text-[22px] sm:text-[30px] font-black leading-tight">
               Kad vas nema kod kuće, tu je naš čovjek.
@@ -777,19 +784,26 @@ function Naslovna({
               <button
                 key={u.naziv}
                 onClick={() => izaberiUsluguIVratiGore(u.naziv)}
-                className={`group rounded-3xl p-5 shadow-soft active:scale-[0.98] transition text-left border ${
+                className={`group relative overflow-hidden rounded-3xl p-5 text-left
+                  transition-[transform,box-shadow,border-color] duration-200
+                  active:scale-[0.98] border ${
                   izabran
-                    ? "bg-[var(--sunshine)]/12 border-[var(--sunshine-deep)] shadow-glow"
-                    : "bg-white border-[var(--beige-border)] hover:shadow-glow hover:border-[var(--sunshine-deep)]/50"
+                    ? "plum-scena border-[var(--sunshine-deep)] shadow-glow text-white"
+                    : "plum-scena border-white/10 text-white hover:-translate-y-1 hover:border-[var(--sunshine-deep)]/60 hover:shadow-glow"
                 }`}
               >
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition ${
-                  izabran ? "sunshine-gradient" : "bg-[var(--cream)] border border-[var(--beige-border)] group-hover:sunshine-gradient"
+                {/* Žuti sjaj koji se pali na prelazak — dubina bez nove boje. */}
+                <span aria-hidden className={`pointer-events-none absolute -top-16 -right-10 h-40 w-40 rounded-full blur-2xl transition-opacity duration-300 ${
+                  izabran ? "opacity-45" : "opacity-0 group-hover:opacity-35"
+                }`} style={{ background: "radial-gradient(circle, var(--sunshine) 0%, transparent 70%)" }} />
+
+                <div className={`relative w-12 h-12 rounded-2xl flex items-center justify-center transition ${
+                  izabran ? "zuti-kvadrat" : "bg-white/8 border border-white/12 group-hover:zuti-kvadrat"
                 }`}>
-                  <u.ikona className={`w-5.5 h-5.5 transition ${izabran ? "text-black" : "text-[var(--sunshine-deep)] group-hover:text-black"}`} />
+                  <u.ikona className={`w-5.5 h-5.5 transition ${izabran ? "text-[var(--plum-deep)]" : "text-[var(--sunshine)] group-hover:text-[var(--plum-deep)]"}`} />
                 </div>
-                <div className="mt-3 text-[15px] font-black">{u.naziv}</div>
-                <div className="mt-1 text-[12.5px] font-semibold text-[var(--plum-deep)]/60 leading-snug">
+                <div className="relative mt-4 text-[16px] font-black tracking-tight">{u.naziv}</div>
+                <div className="relative mt-1.5 text-[12.5px] font-semibold text-white/55 leading-snug">
                   {u.opis}
                 </div>
               </button>
@@ -800,7 +814,7 @@ function Naslovna({
 
       {/* ── 6. KAKO OVO IDE ── */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 mt-12">
-        <div className="rounded-3xl plum-gradient p-6 sm:p-10 shadow-soft">
+        <div className="rounded-3xl plum-scena p-6 sm:p-10 shadow-soft">
           <h2 className="text-[22px] sm:text-[28px] font-black text-white text-center">
             Kako ovo ide
           </h2>
@@ -822,13 +836,22 @@ function Naslovna({
                 naslov: "Gotovo je",
                 opis: "Plaćate kad je posao završen. Ako nešto krene naopako, zovete nas. Ne majstora.",
               },
-            ].map((k) => (
-              <div key={k.broj} className="text-center">
-                <div className="w-12 h-12 mx-auto rounded-2xl sunshine-gradient flex items-center justify-center shadow-glow">
-                  <span className="text-[20px] font-black text-black">{k.broj}</span>
+            ].map((k, i) => (
+              <div key={k.broj} className="relative text-center">
+                {/* Tanka linija koja povezuje korake — vidi se samo na širem ekranu,
+                    da se čita kao put, a ne kao tri odvojene stvari. */}
+                {i < 2 && (
+                  <span
+                    aria-hidden
+                    className="hidden sm:block absolute top-7 left-[calc(50%+2.2rem)] right-[calc(-50%+2.2rem)] h-px"
+                    style={{ background: "linear-gradient(90deg, color-mix(in oklab, var(--sunshine) 45%, transparent), transparent)" }}
+                  />
+                )}
+                <div className="relative w-14 h-14 mx-auto rounded-2xl sunshine-gradient flex items-center justify-center shadow-glow">
+                  <span className="text-[24px] font-black text-[var(--plum-deep)]">{k.broj}</span>
                 </div>
-                <div className="mt-3 font-black text-white text-[16px]">{k.naslov}</div>
-                <div className="mt-1.5 text-[13px] font-semibold text-white/65 leading-relaxed">
+                <div className="mt-4 font-black text-white text-[17px] tracking-tight">{k.naslov}</div>
+                <div className="mt-2 text-[13px] font-semibold text-white/60 leading-relaxed max-w-[34ch] mx-auto">
                   {k.opis}
                 </div>
               </div>
@@ -849,7 +872,7 @@ function Naslovna({
       <Pitanja />
 
       {/* ── 7. FOOTER ── */}
-      <footer className="plum-gradient text-white mt-14">
+      <footer className="plum-scena text-white mt-14">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-8">
             <div className="sm:col-span-1">

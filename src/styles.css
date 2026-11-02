@@ -90,8 +90,94 @@
   }
 }
 
+/* Naslovni dio je taman — to je prvo što čovjek vidi i mora imati težinu.
+   Svijetli dio stranice počinje tek ispod njega. */
 @utility app-gradient {
-  background: linear-gradient(180deg, #FFF9E8 0%, #FFFFFF 60%, #FFF9E8 100%);
+  background: linear-gradient(180deg, #FFFBF0 0%, #FFFFFF 48%, #FFF8E4 100%);
+}
+
+/* ── Naslovna scena ───────────────────────────────────────────────────────
+   Tri sloja: dva žuta svjetla koja se sporo kreću i tamna plum podloga.
+   Svjetla ne skreću pažnju — daju osjećaj da iza nečega ima dubine. */
+@utility hero-scena {
+  position: relative;
+  background:
+    radial-gradient(60% 45% at 18% 12%, color-mix(in oklab, var(--sunshine) 16%, transparent) 0%, transparent 60%),
+    radial-gradient(55% 40% at 85% 8%, color-mix(in oklab, var(--sunshine-deep) 12%, transparent) 0%, transparent 65%),
+    linear-gradient(165deg, oklch(0.26 0.055 305) 0%, oklch(0.17 0.045 305) 60%, oklch(0.20 0.05 305) 100%);
+  overflow: hidden;
+}
+
+/* Svjetlo koje diše iza naslova. */
+@keyframes hero-dah {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.55; }
+  50%      { transform: translate3d(3%, 2%, 0) scale(1.12); opacity: 0.8; }
+}
+@utility hero-svjetlo {
+  position: absolute;
+  inset: -20% -10% auto -10%;
+  height: 70%;
+  background: radial-gradient(50% 50% at 50% 40%, color-mix(in oklab, var(--sunshine) 30%, transparent) 0%, transparent 70%);
+  filter: blur(40px);
+  animation: hero-dah 14s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Mreža preko tamnog — jedva vidljiva, daje teksturu umjesto prazne boje. */
+@utility hero-mreza {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--sunshine) 7%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--sunshine) 7%, transparent) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(70% 55% at 50% 30%, #000 0%, transparent 75%);
+  pointer-events: none;
+}
+
+/* Naslov: bijelo pa žuti gradijent u drugom redu. */
+@utility naslov-sjaj {
+  background: linear-gradient(100deg, oklch(0.92 0.15 92) 0%, var(--sunshine) 35%, var(--sunshine-deep) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Polja i dugmad na tamnom — staklo umjesto pune bijele ploče. */
+@utility staklo {
+  background: color-mix(in oklab, #ffffff 9%, transparent);
+  border: 1px solid color-mix(in oklab, #ffffff 14%, transparent);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+
+/* Ulazak naslovnog dijela — jednom, brzo, iz vidljivog stanja ka mirnom. */
+@keyframes ulaz {
+  from { opacity: 0; transform: translate3d(0, 14px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@utility ulaz-1 { animation: ulaz 0.5s cubic-bezier(0.22, 0.85, 0.3, 1) both; }
+@utility ulaz-2 { animation: ulaz 0.5s 0.08s cubic-bezier(0.22, 0.85, 0.3, 1) both; }
+@utility ulaz-3 { animation: ulaz 0.5s 0.16s cubic-bezier(0.22, 0.85, 0.3, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-svjetlo { animation: none; }
+  .ulaz-1, .ulaz-2, .ulaz-3 { animation: none; }
+}
+
+/* Tamne sekcije: isti plum, ali sa svjetlom u gornjem uglu umjesto ravne
+   ploče — po tome se razlikuje ekran od štampe. */
+@utility plum-scena {
+  background:
+    radial-gradient(90% 60% at 18% 0%, color-mix(in oklab, var(--plum) 70%, transparent) 0%, rgba(0, 0, 0, 0) 60%),
+    linear-gradient(140deg, oklch(0.32 0.065 305) 0%, oklch(0.20 0.05 305) 100%);
+}
+
+/* Žuti okvir koji drži ikonicu usluge — isti jezik kao logo. */
+@utility zuti-kvadrat {
+  background: linear-gradient(135deg, oklch(0.90 0.14 92), var(--sunshine-deep));
+  box-shadow: 0 10px 22px -10px color-mix(in oklab, var(--sunshine-deep) 70%, transparent);
 }
 
 @utility sunshine-gradient {
