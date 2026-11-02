@@ -357,6 +357,32 @@ const rute = {
     posalji(res, 200, { ok: true, pin, ime: m.ime, telefon: m.telefon });
   },
 
+  /* Brisanje majstora. Nezavršeni poslovi koje je kupio vraćaju se u ponudu
+     da ne ostanu visiti ni kod koga. Završeni ostaju u evidenciji.
+     Ako duguje, traži se izričita potvrda — brisanjem se gubi trag o dugu. */
+  "POST /api/admin-obrisi-majstora": async (req, res) => {
+    if (!(await trazenAdmin(req, res))) return;
+    const { id, i_dug } = await tijelo(req);
+
+    const m = await citajJedan("stanje_majstora", `id=eq.${id}`);
+    if (!m) return greska(res, 404, "Majstor ne postoji.");
+
+    const dug = Number(m.dug);
+    if (dug > 0.001 && !i_dug) {
+      return greska(res, 409,
+        `${m.ime} duguje ${dug.toFixed(2)} €. Brisanjem se gubi trag o tom dugu.`);
+    }
+
+    // Poslovi koje nije stigao da završi idu nazad u ponudu.
+    await izmijeni(
+      "poslovi", `kupac_id=eq.${id}&status=eq.kupljen`,
+      { status: "slobodan", kupac_id: null },
+    );
+
+    await obrisi("majstori", `id=eq.${id}`);
+    posalji(res, 200, { ok: true, vracen_dug: dug });
+  },
+
   "POST /api/admin-uplata": async (req, res) => {
     if (!(await trazenAdmin(req, res))) return;
     const t = await tijelo(req);

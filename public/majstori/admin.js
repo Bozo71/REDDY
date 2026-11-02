@@ -213,7 +213,10 @@ async function otvoriMajstora(id) {
       </div>
       <div class="red-dugmadi">
         <button class="dugme tiha" data-nov-pin>Novi PIN</button>
-        <button class="dugme tiha" data-pauza>${m.pauziran ? "Vrati u rad" : "Pauziraj majstora"}</button>
+        <button class="dugme tiha" data-pauza>${m.pauziran ? "Vrati u rad" : "Pauziraj"}</button>
+      </div>
+      <div class="red-dugmadi">
+        <button class="dugme opasna" data-obrisi-majstora>Obriši majstora</button>
       </div>
 
       <h2 style="font-size:15px">Kupovine</h2>
@@ -286,6 +289,31 @@ async function otvoriMajstora(id) {
     });
     zatvori();
     pokaziPin(r);
+  };
+
+  prozor.querySelector("[data-obrisi-majstora]").onclick = async () => {
+    if (!confirm(
+      `Obrisati ${m.ime}?\n\n` +
+      "Nestaje iz spiska i ne može se više prijaviti. Poslovi koje je kupio " +
+      "a nije završio vraćaju se u ponudu ostalim majstorima.\n\n" +
+      "Ovo se ne može vratiti.",
+    )) return;
+
+    try {
+      await api("/api/admin-obrisi-majstora", {
+        method: "POST", body: JSON.stringify({ id }),
+      });
+      zatvori();
+      await ucitajMajstore();
+    } catch (greska) {
+      // Server odbija brisanje dok duguje — pita se izričito.
+      if (!confirm(`${greska.message}\n\nSvejedno obrisati?`)) return;
+      await api("/api/admin-obrisi-majstora", {
+        method: "POST", body: JSON.stringify({ id, i_dug: true }),
+      });
+      zatvori();
+      await ucitajMajstore();
+    }
   };
 
   prozor.querySelector("[data-pauza]").onclick = async () => {
