@@ -166,12 +166,14 @@ async function ucitajMoje() {
 
   el("lista-moji").innerHTML = poslovi.map((p) => {
     const ponisten = p.stanje === "ponistena";
+    const zavrsen = p.status === "zavrsen";
     return `
       <article class="posao" ${ponisten ? 'style="opacity:.6"' : ""}>
         <div class="posao-vrh">
           <span class="znak ${ponisten ? "crvena" : "zelena"}">
             ${ponisten ? "Vraćen novac" : nazivKategorije(p.kategorija)}
           </span>
+          ${zavrsen ? '<span class="znak zelena">✓ završen</span>' : ""}
           <span class="cijena">${novac(p.cijena)}</span>
         </div>
         <p class="posao-opis">${bezHtml(p.opis)}</p>

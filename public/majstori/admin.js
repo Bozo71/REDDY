@@ -119,7 +119,21 @@ document.addEventListener("click", (e) => {
 
   const rijesen = e.target.closest("[data-rijesen]");
   if (rijesen) return oznaciRijesenim(rijesen.dataset.rijesen);
+
+  const zavrsen = e.target.closest("[data-zavrsen]");
+  if (zavrsen) return oznaciZavrsenim(zavrsen.dataset.zavrsen, false);
+
+  const nijeZavrsen = e.target.closest("[data-nije-zavrsen]");
+  if (nijeZavrsen) return oznaciZavrsenim(nijeZavrsen.dataset.nijeZavrsen, true);
 });
+
+async function oznaciZavrsenim(posaoId, vrati) {
+  await api("/api/admin-zavrsen", {
+    method: "POST",
+    body: JSON.stringify({ posao_id: posaoId, vrati }),
+  });
+  await osvjeziTrenutni();
+}
 
 async function obrisiPosao(posaoId) {
   if (!confirm(
@@ -427,6 +441,7 @@ async function ucitajPrihvacene() {
               <span class="znak ${r.stanje === "ponistena" ? "crvena" : "zelena"}">
                 ${r.stanje === "ponistena" ? "poništeno" : nazivKategorije(r.kategorija)}
               </span>
+              ${r.status === "zavrsen" ? '<span class="znak zelena">✓ završen</span>' : ""}
               ${r.stanje === "prijavljen" ? '<span class="znak crvena">prijavljen problem</span>' : ""}
               <span class="cijena">${novac(r.cijena)}</span>
             </div>
@@ -439,10 +454,18 @@ async function ucitajPrihvacene() {
             <div class="posao-red">📍 ${bezHtml(r.adresa ?? r.lokacija)}${r.stan ? ", " + bezHtml(r.stan) : ""}</div>
             <div class="posao-red">🕐 uzeo ${datumSat(r.vrijeme)}</div>
             <div class="red-dugmadi">
-              ${r.stanje === "ponistena" ? "" : `
-                <button class="dugme tiha mala" data-ponisti="${r.posao_id}">
-                  Nije se dogovorio — vrati u ponudu
-                </button>`}
+              ${r.stanje === "ponistena" ? "" : (
+                r.status === "zavrsen"
+                  ? `<button class="dugme tiha mala" data-nije-zavrsen="${r.posao_id}">
+                       Nije završen
+                     </button>`
+                  : `<button class="dugme mala" data-zavrsen="${r.posao_id}">
+                       ✓ Završeno
+                     </button>
+                     <button class="dugme tiha mala" data-ponisti="${r.posao_id}">
+                       Vrati u ponudu
+                     </button>`
+              )}
               <button class="dugme opasna mala" data-obrisi="${r.posao_id}">Obriši</button>
             </div>
           </article>`).join("")}
@@ -526,13 +549,15 @@ async function ucitajPoslove() {
 
   el("lista-poslovi").innerHTML = poslovi.map((p) => {
     const kupljen = p.status === "kupljen";
+    const zavrsen = p.status === "zavrsen";
     const prijavljen = p.kupovina_stanje === "prijavljen";
     return `
       <article class="posao">
         <div class="posao-vrh">
-          <span class="znak ${kupljen ? "zelena" : "zuta"}">
+          <span class="znak ${kupljen || zavrsen ? "zelena" : "zuta"}">
             ${nazivKategorije(p.kategorija)}
           </span>
+          ${zavrsen ? '<span class="znak zelena">✓ završen</span>' : ""}
           ${prijavljen ? '<span class="znak crvena">prijavljen problem</span>' : ""}
           <span class="cijena">${novac(p.cijena)}</span>
         </div>
@@ -546,14 +571,19 @@ async function ucitajPoslove() {
           ${p.klijent_email ? "· " + bezHtml(p.klijent_email) : ""}
         </div>
         <div class="posao-red">
-          ${kupljen ? `✅ Kupio: <b>${bezHtml(p.kupac_ime ?? "")}</b>` : "⏳ Čeka majstora"}
+          ${kupljen || zavrsen
+            ? `${zavrsen ? "✓ Završio" : "✅ Kupio"}: <b>${bezHtml(p.kupac_ime ?? "")}</b>`
+            : "⏳ Čeka majstora"}
           · izvor: ${bezHtml(p.izvor)}
         </div>
         <div class="red-dugmadi">
           ${kupljen ? `
+            <button class="dugme mala" data-zavrsen="${p.id}">✓ Završeno</button>
             <button class="dugme ${prijavljen ? "opasna" : "tiha"} mala" data-ponisti="${p.id}">
-              Nije se dogovorio — vrati u ponudu
+              Vrati u ponudu
             </button>` : ""}
+          ${zavrsen ? `
+            <button class="dugme tiha mala" data-nije-zavrsen="${p.id}">Nije završen</button>` : ""}
           <button class="dugme opasna mala" data-obrisi="${p.id}">Obriši</button>
         </div>
       </article>`;

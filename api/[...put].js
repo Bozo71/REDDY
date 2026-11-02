@@ -194,7 +194,7 @@ const rute = {
     const kupovine = await citaj(
       "kupovine",
       `majstor_id=eq.${m.id}&stanje=neq.prijavljen&order=vrijeme.desc` +
-      `&select=cijena,vrijeme,stanje,poslovi(id,kategorija,opis,lokacija,adresa,stan,fotografije,termin,` +
+      `&select=cijena,vrijeme,stanje,poslovi(id,kategorija,opis,lokacija,adresa,stan,fotografije,termin,status,` +
       `kontakti(ime,prezime,email,telefon))`,
     );
 
@@ -206,6 +206,7 @@ const rute = {
           id: p.id, kategorija: p.kategorija, opis: p.opis,
           lokacija: p.lokacija, adresa: p.adresa, stan: p.stan,
           slike: razbijSlike(p.fotografije), termin: p.termin,
+          status: p.status,
           cijena: Number(k.cijena), vrijeme: k.vrijeme, stanje: k.stanje,
           klijent_ime: ko.ime, klijent_prezime: ko.prezime,
           klijent_email: ko.email, klijent_telefon: ko.telefon,
@@ -446,6 +447,25 @@ const rute = {
     posalji(res, 200, { ok: true, stanje: await stanjeMajstora(k.majstor_id) });
   },
 
+  /* Majstor javi da je završio — ti potvrdiš. Dug ostaje, posao je plaćen;
+     ovo je samo evidencija šta je odrađeno, a šta još visi. */
+  "POST /api/admin-zavrsen": async (req, res) => {
+    if (!(await trazenAdmin(req, res))) return;
+    const { posao_id, vrati } = await tijelo(req);
+
+    const posao = await citajJedan("poslovi", `id=eq.${posao_id}`);
+    if (!posao) return greska(res, 404, "Posao ne postoji.");
+
+    if (!vrati && posao.status !== "kupljen" && posao.status !== "zavrsen") {
+      return greska(res, 409, "Samo kupljen posao može biti označen kao završen.");
+    }
+
+    await izmijeni("poslovi", `id=eq.${posao_id}`, {
+      status: vrati ? "kupljen" : "zavrsen",
+    });
+    posalji(res, 200, { ok: true });
+  },
+
   "GET /api/admin-prihvaceni": async (req, res) => {
     if (!(await trazenAdmin(req, res))) return;
     const trazi = (new URL(req.url, "http://x").searchParams.get("trazi") ?? "")
@@ -454,7 +474,7 @@ const rute = {
     const redovi = await citaj(
       "kupovine",
       `select=vrijeme,cijena,stanje,majstori(id,ime,telefon),` +
-      `poslovi(id,kategorija,opis,adresa,stan,lokacija,kontakti(ime,prezime,telefon,email))` +
+      `poslovi(id,kategorija,opis,adresa,stan,lokacija,status,kontakti(ime,prezime,telefon,email))` +
       `&order=vrijeme.desc&limit=500`,
     );
 
@@ -467,6 +487,7 @@ const rute = {
         posao_id: r.poslovi.id, kategorija: r.poslovi.kategorija,
         opis: r.poslovi.opis, adresa: r.poslovi.adresa,
         stan: r.poslovi.stan, lokacija: r.poslovi.lokacija,
+        status: r.poslovi.status,
         klijent_ime: ko.ime, klijent_prezime: ko.prezime,
         klijent_telefon: ko.telefon, klijent_email: ko.email,
       };
