@@ -614,8 +614,12 @@ function Naslovna({
 
       {/* ── 2. HERO — tamna scena, prvo što se vidi ── */}
       <div className="hero-scena">
-        <span aria-hidden className="hero-svjetlo" />
-        <span aria-hidden className="hero-mreza" />
+        {/* Svjetlo i mreža u svom omotaču, da ih on odsijeca — a ne scena,
+            jer bi scena odsjekla i padajući spisak usluga. */}
+        <div aria-hidden className="absolute inset-0 overflow-hidden pointer-events-none">
+          <span className="hero-svjetlo" />
+          <span className="hero-mreza" />
+        </div>
 
       <section ref={heroRef} className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-16 sm:pt-28 pb-14 sm:pb-20 text-center scroll-mt-24">
         {/* clamp umjesto fiksnih koraka — naslov nikad ne prelijeva, ni na
@@ -632,7 +636,9 @@ function Naslovna({
             "Voda, struja, moleraj, fasada. Cijela Podgorica. Šaljemo svog čovjeka, a za urađeno odgovaramo mi. Ne on."}
         </p>
 
-        <div className="ulaz-3 mt-8 sm:mt-10 max-w-3xl mx-auto rounded-3xl staklo p-2.5 flex flex-col sm:flex-row gap-2 shadow-[0_28px_60px_-28px_rgba(0,0,0,0.8)]">
+        {/* relative z-20: ulazna animacija koristi transform, a to pravi novi
+            sloj crtanja — bez ovoga tekst ispod završi iznad padajućeg spiska. */}
+        <div className="ulaz-3 relative z-20 mt-8 sm:mt-10 max-w-3xl mx-auto rounded-3xl staklo p-2.5 flex flex-col sm:flex-row gap-2 shadow-[0_28px_60px_-28px_rgba(0,0,0,0.8)]">
           {/* Adresa */}
           <div className="relative flex-1">
             <div
@@ -658,7 +664,7 @@ function Naslovna({
             </div>
 
             {predloziOtvoreni && (
-              <div className="absolute z-40 top-14 left-0 right-0 rounded-2xl bg-white border border-[var(--beige-border)] shadow-soft overflow-hidden drop-down text-left">
+              <div className="absolute z-50 top-14 left-0 right-0 rounded-2xl bg-white border border-[var(--beige-border)] shadow-soft overflow-hidden drop-down text-left">
                 {predlozi.map((a) => (
                   <button
                     key={a}
@@ -686,7 +692,7 @@ function Naslovna({
               <ChevronDown className={`w-4 h-4 shrink-0 transition ${padajuciOtvoren ? "rotate-180" : ""}`} />
             </button>
             {padajuciOtvoren && (
-              <div className="absolute z-30 top-14 left-0 right-0 rounded-2xl bg-white border border-[var(--beige-border)] shadow-soft overflow-hidden drop-down">
+              <div className="absolute z-50 top-14 left-0 right-0 rounded-2xl bg-white border border-[var(--beige-border)] shadow-soft overflow-hidden drop-down">
                 {PROBLEMI.map((p) => (
                   <button
                     key={p}
@@ -705,7 +711,7 @@ function Naslovna({
           <DugmeJaviteKvar onClick={otvoriFormu} klasa="h-12 px-7 text-[14px] shrink-0" />
         </div>
 
-        <p className="ulaz-3 mt-4 text-[12.5px] font-bold text-white/45">
+        <p className="ulaz-3 relative z-10 mt-4 text-[12.5px] font-bold text-white/45">
           Hitno je?{" "}
           <a href={TELEFON_LINK} className="font-black text-[var(--sunshine)] hover:underline">
             Zovite {TELEFON}

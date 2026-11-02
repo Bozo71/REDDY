@@ -99,13 +99,14 @@
 /* ── Naslovna scena ───────────────────────────────────────────────────────
    Tri sloja: dva žuta svjetla koja se sporo kreću i tamna plum podloga.
    Svjetla ne skreću pažnju — daju osjećaj da iza nečega ima dubine. */
+/* Bez overflow: hidden — inače odsijeca padajući spisak koji izlazi iz
+   scene. Svjetlo i mreža se zato drže u svom omotaču koji ih odsijeca. */
 @utility hero-scena {
   position: relative;
   background:
     radial-gradient(60% 45% at 18% 12%, color-mix(in oklab, var(--sunshine) 16%, transparent) 0%, transparent 60%),
     radial-gradient(55% 40% at 85% 8%, color-mix(in oklab, var(--sunshine-deep) 12%, transparent) 0%, transparent 65%),
     linear-gradient(165deg, oklch(0.26 0.055 305) 0%, oklch(0.17 0.045 305) 60%, oklch(0.20 0.05 305) 100%);
-  overflow: hidden;
 }
 
 /* Svjetlo koje diše iza naslova. */
