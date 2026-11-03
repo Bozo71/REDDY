@@ -473,6 +473,35 @@ const rute = {
     posalji(res, 200, { ok: true, stanje: await stanjeMajstora(k.majstor_id) });
   },
 
+  /* Ispravka struke. Klijent često ne zna razliku pa za utičnicu izabere
+     vodoinstalatera. Mijenja se samo dok je posao slobodan — kad ga neko
+     kupi, platio je posao svoje struke i to se ne dira ispod ruke.
+     Cijena ide po cjenovniku nove struke, a majstori te struke dobiju
+     obavještenje kao da je posao tek stigao. */
+  "POST /api/admin-promijeni-kategoriju": async (req, res) => {
+    if (!(await trazenAdmin(req, res))) return;
+    const { posao_id, kategorija } = await tijelo(req);
+
+    if (!KATEGORIJE.some((k) => k.id === kategorija)) {
+      return greska(res, 400, "Nepoznata struka.");
+    }
+
+    const posao = await citajJedan("poslovi", `id=eq.${posao_id}`);
+    if (!posao) return greska(res, 404, "Posao ne postoji.");
+
+    if (posao.status !== "slobodan") {
+      return greska(res, 409,
+        "Posao je već kupljen. Prvo ga vrati u ponudu, pa onda promijeni struku.");
+    }
+    if (posao.kategorija === kategorija) return posalji(res, 200, { ok: true });
+
+    const cijena = await cijenaKategorije(kategorija);
+    await izmijeni("poslovi", `id=eq.${posao_id}`, { kategorija, cijena });
+
+    await javiZaNovPosao({ ...posao, kategorija, cijena }).catch(() => {});
+    posalji(res, 200, { ok: true, kategorija, cijena });
+  },
+
   /* Majstor javi da je završio — ti potvrdiš. Dug ostaje, posao je plaćen;
      ovo je samo evidencija šta je odrađeno, a šta još visi. */
   "POST /api/admin-zavrsen": async (req, res) => {

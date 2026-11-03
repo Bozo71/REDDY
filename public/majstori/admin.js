@@ -127,6 +127,43 @@ document.addEventListener("click", (e) => {
   if (nijeZavrsen) return oznaciZavrsenim(nijeZavrsen.dataset.nijeZavrsen, true);
 });
 
+// Ispravka struke na zahtjevu — klijenti često promaše.
+document.addEventListener("change", async (e) => {
+  const izbor = e.target.closest("[data-kategorija]");
+  if (!izbor) return;
+
+  const posaoId = izbor.dataset.kategorija;
+  const nova = izbor.value;
+  izbor.disabled = true;
+
+  try {
+    const r = await api("/api/admin-promijeni-kategoriju", {
+      method: "POST",
+      body: JSON.stringify({ posao_id: posaoId, kategorija: nova }),
+    });
+    await osvjeziTrenutni();
+    if (r.cijena !== undefined) {
+      poruka(`Prebačeno na ${nazivKategorije(nova)} — cijena je sad ${novac(r.cijena)}.`);
+    }
+  } catch (greska) {
+    alert(greska.message);
+    await osvjeziTrenutni();
+  }
+});
+
+/** Kratka poruka na dnu ekrana, nestane sama. */
+function poruka(tekst) {
+  const stara = document.getElementById("poruka-traka");
+  if (stara) stara.remove();
+
+  const t = document.createElement("div");
+  t.id = "poruka-traka";
+  t.className = "poruka-traka";
+  t.textContent = tekst;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
 async function oznaciZavrsenim(posaoId, vrati) {
   await api("/api/admin-zavrsen", {
     method: "POST",
@@ -582,9 +619,14 @@ async function ucitajPoslove() {
     return `
       <article class="posao">
         <div class="posao-vrh">
-          <span class="znak ${kupljen || zavrsen ? "zelena" : "zuta"}">
-            ${nazivKategorije(p.kategorija)}
-          </span>
+          ${p.status === "slobodan"
+            ? `<select class="znak-izbor" data-kategorija="${p.id}" title="Ispravi struku ako je klijent pogriješio">
+                 ${kategorije.map((k) => `
+                   <option value="${k.id}" ${k.id === p.kategorija ? "selected" : ""}>
+                     ${bezHtml(k.naziv)}
+                   </option>`).join("")}
+               </select>`
+            : `<span class="znak zelena">${nazivKategorije(p.kategorija)}</span>`}
           ${zavrsen ? '<span class="znak zelena">✓ završen</span>' : ""}
           ${prijavljen ? '<span class="znak crvena">prijavljen problem</span>' : ""}
           <span class="cijena">${novac(p.cijena)}</span>
