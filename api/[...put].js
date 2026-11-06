@@ -105,17 +105,31 @@ async function prebrzo(telefon) {
 
 const rute = {
   /* Zanati dolaze iz baze, pa se dodaju iz panela bez diranja koda.
-     KATEGORIJE iz koda služe samo kao rezerva ako baza zakaže. */
+
+     Čita se bez „order" i slaže ovdje — tako red prolazi i prije nego se
+     supabase-zanati.sql pokrene, dok kolona redoslijed još ne postoji.
+     Tada naziv i aktivna dođu prazni, pa se uzimaju iz KATEGORIJE, a
+     cijena svejedno dolazi iz baze — kao i do sad.
+     KATEGORIJE služe kao rezerva samo ako baza sasvim zakaže. */
   "GET /api/kategorije": async (req, res) => {
     try {
-      const redovi = await citaj("cjenovnik", "select=*&order=redoslijed.asc,naziv.asc");
+      const redovi = await citaj("cjenovnik", "select=*");
       if (redovi.length) {
-        const sve = redovi.map((c) => ({
-          id: c.kategorija,
-          naziv: c.naziv || c.kategorija,
-          cijena: Number(c.cijena),
-          aktivna: c.aktivna !== false,
-        }));
+        const sve = redovi
+          .map((c) => {
+            const izKoda = KATEGORIJE.find((k) => k.id === c.kategorija);
+            const mjesto = KATEGORIJE.indexOf(izKoda);
+            return {
+              id: c.kategorija,
+              naziv: c.naziv || izKoda?.naziv || c.kategorija,
+              cijena: Number(c.cijena),
+              aktivna: c.aktivna !== false,
+              _red: c.redoslijed ?? (izKoda ? mjesto * 10 : 1000),
+            };
+          })
+          .sort((a, b) => a._red - b._red || a.naziv.localeCompare(b.naziv))
+          .map(({ _red, ...k }) => k);
+
         // Ugašeni zanati se ne nude, ali ostaju poznati zbog starih poslova.
         return posalji(res, 200, {
           kategorije: sve.filter((k) => k.aktivna),
