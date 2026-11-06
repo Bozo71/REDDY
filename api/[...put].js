@@ -52,6 +52,34 @@ async function trazenAdmin(req, res) {
 }
 
 const kategorijeMajstora = (m) => (Array.isArray(m.kategorije) ? m.kategorije : []);
+
+/* Naziv zanata → oznaka pod kojom živi u bazi: bez kvačica, mala slova,
+   razmaci u donju crtu. „Klima i grijanje" → klima_i_grijanje. */
+function uOznaku(naziv) {
+  return String(naziv)
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/đ/gi, "d").replace(/ć|č/gi, "c").replace(/š/gi, "s").replace(/ž/gi, "z")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 40);
+}
+
+/* Dok se supabase-zanati.sql ne pokrene, cjenovnik nema kolone naziv,
+   redoslijed i aktivna. Umjesto sirove greške iz baze, reci šta da se radi. */
+function bazaNijeSpremna(e) {
+  return /naziv|redoslijed|aktivna/.test(e.message) && /column|kolon/i.test(e.message);
+}
+
+/** Da li zanat postoji u bazi — provjera umjesto spiska iz koda. */
+async function zanatPostoji(kategorija) {
+  if (!kategorija) return false;
+  try {
+    const z = await citajJedan("cjenovnik", `kategorija=eq.${encodeURIComponent(kategorija)}`);
+    if (z) return true;
+  } catch { /* baza zakazala — pada na spisak iz koda */ }
+  return KATEGORIJE.some((k) => k.id === kategorija);
+}
 const razbijSlike = (s) => (Array.isArray(s) ? s : []);
 
 /* Prije kupovine majstor ne smije dobiti tačnu adresu — samo ulicu bez broja. */
@@ -76,12 +104,28 @@ async function prebrzo(telefon) {
 /* ── Rute ──────────────────────────────────────────────────────────────── */
 
 const rute = {
+  /* Zanati dolaze iz baze, pa se dodaju iz panela bez diranja koda.
+     KATEGORIJE iz koda služe samo kao rezerva ako baza zakaže. */
   "GET /api/kategorije": async (req, res) => {
-    const cijene = await citaj("cjenovnik", "select=*");
-    const mapa = Object.fromEntries(cijene.map((c) => [c.kategorija, Number(c.cijena)]));
-    posalji(res, 200, {
-      kategorije: KATEGORIJE.map((k) => ({ ...k, cijena: mapa[k.id] ?? k.cijena })),
-    });
+    try {
+      const redovi = await citaj("cjenovnik", "select=*&order=redoslijed.asc,naziv.asc");
+      if (redovi.length) {
+        const sve = redovi.map((c) => ({
+          id: c.kategorija,
+          naziv: c.naziv || c.kategorija,
+          cijena: Number(c.cijena),
+          aktivna: c.aktivna !== false,
+        }));
+        // Ugašeni zanati se ne nude, ali ostaju poznati zbog starih poslova.
+        return posalji(res, 200, {
+          kategorije: sve.filter((k) => k.aktivna),
+          sve,
+        });
+      }
+    } catch (e) {
+      console.warn("[kategorije] baza:", e.message);
+    }
+    posalji(res, 200, { kategorije: KATEGORIJE, sve: KATEGORIJE });
   },
 
   /* ── Obavještenja ── */
@@ -249,15 +293,24 @@ const rute = {
       return greska(res, 429, "Previše zahtjeva sa istog broja. Pokušajte kasnije.");
     }
 
+    /* Ako struka ne postoji — stara stranica u kešu, ugašen zanat — zahtjev
+       se ne odbija. Ide u kućne popravke, a struka se ispravi u panelu;
+       izgubljen klijent je gora greška od pogrešne struke. */
+    let kategorija = String(t.kategorija);
+    if (!(await zanatPostoji(kategorija))) {
+      console.warn("[zahtjev] nepoznata struka:", kategorija);
+      kategorija = "kucne_popravke";
+    }
+
     const posao = await upisi("poslovi", {
-      kategorija: t.kategorija,
+      kategorija,
       opis: String(t.opis).slice(0, 1000),
       lokacija: t.lokacija || "Podgorica",
       adresa: t.adresa ?? null,
       stan: t.stan ?? null,
       fotografije: Array.isArray(t.fotografije) ? t.fotografije.slice(0, 8) : [],
       termin: t.termin ?? null,
-      cijena: await cijenaKategorije(t.kategorija),
+      cijena: await cijenaKategorije(kategorija),
       status: "slobodan",
       izvor: t.izvor || "sajt",
     });
@@ -482,7 +535,7 @@ const rute = {
     if (!(await trazenAdmin(req, res))) return;
     const { posao_id, kategorija } = await tijelo(req);
 
-    if (!KATEGORIJE.some((k) => k.id === kategorija)) {
+    if (!(await zanatPostoji(kategorija))) {
       return greska(res, 400, "Nepoznata struka.");
     }
 
@@ -620,6 +673,86 @@ const rute = {
       ok: true,
       stanje: kupac ? await stanjeMajstora(kupac) : null,
     });
+  },
+
+  /* Nov zanat ili izmjena postojećeg. Oznaka se izvodi iz naziva i poslije
+     se ne mijenja — po njoj se vežu poslovi i struke majstora. */
+  "POST /api/admin-zanat": async (req, res) => {
+    if (!(await trazenAdmin(req, res))) return;
+    const t = await tijelo(req);
+
+    const naziv = String(t.naziv ?? "").trim();
+    const cijena = Number(t.cijena);
+
+    if (naziv.length < 2) return greska(res, 400, "Naziv zanata je prekratak.");
+    if (!(cijena >= 0)) return greska(res, 400, "Cijena mora biti broj.");
+
+    const oznaka = t.kategorija || uOznaku(naziv);
+    if (!oznaka) return greska(res, 400, "Naziv mora imati bar jedno slovo.");
+
+    const postoji = await citajJedan("cjenovnik", `kategorija=eq.${encodeURIComponent(oznaka)}`);
+
+    try {
+      if (postoji) {
+        await izmijeni("cjenovnik", `kategorija=eq.${encodeURIComponent(oznaka)}`, {
+          naziv, cijena,
+          ...(t.redoslijed !== undefined ? { redoslijed: Number(t.redoslijed) } : {}),
+          ...(t.aktivna !== undefined ? { aktivna: !!t.aktivna } : {}),
+        });
+        return posalji(res, 200, { ok: true, kategorija: oznaka, nov: false });
+      }
+
+      // Novi ide na kraj spiska.
+      const svi = await citaj("cjenovnik", "select=redoslijed&order=redoslijed.desc&limit=1");
+      const redoslijed = t.redoslijed !== undefined
+        ? Number(t.redoslijed)
+        : Number(svi?.[0]?.redoslijed ?? 0) + 10;
+
+      await upisi("cjenovnik", { kategorija: oznaka, naziv, cijena, redoslijed, aktivna: true });
+      posalji(res, 201, { ok: true, kategorija: oznaka, nov: true });
+    } catch (e) {
+      if (bazaNijeSpremna(e)) {
+        return greska(res, 503,
+          "Baza još nije pripremljena za zanate. Otvori Supabase → SQL Editor " +
+          "i pokreni supabase-zanati.sql, pa probaj opet.");
+      }
+      throw e;
+    }
+  },
+
+  /* Gašenje zanata. Ne briše se: postojeći poslovi i majstori ga i dalje
+     pominju, pa bi brisanje ostavilo rupe. Ugašen se samo više ne nudi. */
+  "POST /api/admin-zanat-prekidac": async (req, res) => {
+    if (!(await trazenAdmin(req, res))) return;
+    const { kategorija, aktivna } = await tijelo(req);
+
+    const z = await citajJedan("cjenovnik", `kategorija=eq.${encodeURIComponent(kategorija)}`);
+    if (!z) return greska(res, 404, "Taj zanat ne postoji.");
+
+    if (aktivna === false) {
+      const slobodni = await citaj(
+        "poslovi",
+        `kategorija=eq.${encodeURIComponent(kategorija)}&status=eq.slobodan&select=id`,
+      );
+      if (slobodni.length) {
+        return greska(res, 409,
+          `Ima ${slobodni.length} nezauzetih poslova u toj struci. ` +
+          `Prvo ih riješi ili prebaci u drugu struku.`);
+      }
+    }
+
+    try {
+      await izmijeni("cjenovnik", `kategorija=eq.${encodeURIComponent(kategorija)}`,
+                     { aktivna: !!aktivna });
+    } catch (e) {
+      if (bazaNijeSpremna(e)) {
+        return greska(res, 503,
+          "Baza još nije pripremljena za zanate. Otvori Supabase → SQL Editor " +
+          "i pokreni supabase-zanati.sql, pa probaj opet.");
+      }
+      throw e;
+    }
+    posalji(res, 200, { ok: true });
   },
 
   "POST /api/admin-cjenovnik": async (req, res) => {

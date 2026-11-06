@@ -62,9 +62,10 @@ export async function javiZaNovPosao(posao) {
   if (!PUSH_RADI) return { poslato: 0 };
 
   try {
-    const [majstori, admini] = await Promise.all([
+    const [majstori, admini, naziv] = await Promise.all([
       citaj("majstori", `select=id,kategorije,pauziran`),
       citaj("admini", "select=id"),
+      nazivZanata(posao.kategorija),
     ]);
 
     const zaStruku = majstori
@@ -84,12 +85,12 @@ export async function javiZaNovPosao(posao) {
 
     const ishodi = await Promise.allSettled([
       ...majstorske.map((p) => posaljiJednom(p, {
-        naslov: `Nov posao — ${NAZIV[posao.kategorija] ?? posao.kategorija}`,
+        naslov: `Nov posao — ${naziv}`,
         tekst: `${cijena} € · ${kratko}`,
         putanja: "/majstori",
       })),
       ...adminske.map((p) => posaljiJednom(p, {
-        naslov: `Nov zahtjev — ${NAZIV[posao.kategorija] ?? posao.kategorija}`,
+        naslov: `Nov zahtjev — ${naziv}`,
         tekst: kratko,
         putanja: "/majstori/admin",
       })),
@@ -121,8 +122,22 @@ export async function posaljiProbu(vrsta, koId) {
   return { poslato: ishodi.filter((i) => i.status === "fulfilled" && i.value).length };
 }
 
+/* Naziv zanata za naslov obavještenja. Iz baze, da nov zanat iz panela
+   odmah ima pravo ime; spisak ispod je rezerva ako poziv zakaže. */
+async function nazivZanata(kategorija) {
+  try {
+    const red = await citaj(
+      "cjenovnik",
+      `kategorija=eq.${encodeURIComponent(kategorija)}&select=naziv&limit=1`,
+    );
+    const naziv = red?.[0]?.naziv;
+    if (naziv) return String(naziv).toLowerCase();
+  } catch { /* nije važno koliko da obavještenje ne stigne */ }
+  return NAZIV[kategorija] ?? String(kategorija ?? "").replace(/_/g, " ");
+}
+
 const NAZIV = {
-  kucne_popravke: "kućne popravke", klime: "klime", vodoinstalater: "vodoinstalater",
-  elektricar: "električar", sigurnost: "alarmi i kamere", bravar: "bravar",
+  kucne_popravke: "kućne popravke", klime: "klime i grijanje", vodoinstalater: "vodoinstalater",
+  elektricar: "električar", sigurnost: "alarmi, kamere, interfoni", bravar: "bravar",
   moler: "moler", fasader: "fasader", keramicar: "keramičar",
 };

@@ -82,7 +82,7 @@
       Problemi <span id="broj-problema" class="znak crvena" hidden></span>
     </button>
     <button class="jezicak" data-jezicak="poslovi" type="button">Poslovi</button>
-    <button class="jezicak" data-jezicak="cijene" type="button">Cijene</button>
+    <button class="jezicak" data-jezicak="cijene" type="button">Zanati</button>
   </nav>
 
   <main class="omot">
@@ -129,11 +129,16 @@
     </section>
 
     <section id="dio-cijene" hidden>
-      <h1>Cijene po kategoriji</h1>
-      <p class="tiho">Koliko majstor plaća da otključa posao iz te kategorije.</p>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <h1 style="margin:0">Zanati</h1>
+        <button id="dugme-nov-zanat" class="dugme mala" style="margin-left:auto">+ Nov zanat</button>
+      </div>
+      <p class="tiho">
+        Šta nudiš i koliko majstor plaća da otključa posao. Nov zanat se odmah
+        pojavi u formi na sajtu i kod majstora kad ga izabereš u svojim strukama.
+      </p>
+      <div id="poruka-cijene"></div>
       <div id="lista-cijena"></div>
-      <button id="dugme-sacuvaj-cijene" class="dugme" style="margin-top:14px">Sačuvaj cijene</button>
-      <div id="poruka-cijene" style="margin-top:12px"></div>
     </section>
   </main>
 </div>

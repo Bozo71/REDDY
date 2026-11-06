@@ -6,6 +6,7 @@ try { token = localStorage.getItem(KLJUC); } catch {}
 
 let jaPodaci = null;
 let trenutniJezicak = "poslovi";
+let zanati = [];   // nazivi zanata iz baze — da nov zanat ima pravo ime
 
 const el = (id) => document.getElementById(id);
 const novac = (n) => `${Number(n).toFixed(2).replace(/\.00$/, "")} €`;
@@ -72,7 +73,12 @@ async function uđi(odmah = false) {
     el("lista-poslovi").innerHTML = '<div class="prazno">Učitavam…</div>';
   }
 
-  jaPodaci = await api("/api/ja");
+  // Spisak zanata ide uporedo — treba samo za nazive, pa ne smije da koči.
+  const [ja] = await Promise.all([
+    api("/api/ja"),
+    api("/api/kategorije").then((r) => { zanati = r.sve ?? r.kategorije ?? []; }).catch(() => {}),
+  ]);
+  jaPodaci = ja;
 
   el("ekran-prijava").hidden = true;
   el("ekran-app").hidden = false;
@@ -391,12 +397,17 @@ if ("serviceWorker" in navigator) {
 
 /* ── Sitnice ── */
 
+/* Nazivi dolaze iz baze, da nov zanat iz panela odmah ima pravo ime.
+   Spisak ispod je samo rezerva ako poziv zakaže. */
 const NAZIVI = {
-  kucne_popravke: "Kućne popravke", klime: "Klime", vodoinstalater: "Vodoinstalater",
-  elektricar: "Električar", sigurnost: "Alarmi i kamere", moler: "Moler",
+  kucne_popravke: "Kućne popravke", klime: "Klime i grijanje", vodoinstalater: "Vodoinstalater",
+  elektricar: "Električar", sigurnost: "Alarmi, kamere, interfoni", moler: "Moler",
   fasader: "Fasader", keramicar: "Keramičar", bravar: "Bravar",
 };
-const nazivKategorije = (id) => NAZIVI[id] ?? id;
+const nazivKategorije = (id) =>
+  zanati.find((k) => k.id === id)?.naziv
+  ?? NAZIVI[id]
+  ?? String(id ?? "").replace(/_/g, " ");
 
 function bezHtml(s) {
   const d = document.createElement("div");

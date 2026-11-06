@@ -4,7 +4,8 @@ const KLJUC = "reddy-admin-token";
 let token = null;
 try { token = localStorage.getItem(KLJUC); } catch {}
 
-let kategorije = [];
+let kategorije = [];   // samo ono što se trenutno nudi
+let sviZanati = [];    // i ugašeni, da se mogu vratiti i da se zna naziv starih poslova
 
 const el = (id) => document.getElementById(id);
 const novac = (n) => `${Number(n).toFixed(2).replace(/\.00$/, "")} €`;
@@ -60,6 +61,7 @@ async function uđi(odmah = false) {
     api("/api/admin-majstori"),
   ]);
   kategorije = kat.kategorije;
+  sviZanati = kat.sve ?? kat.kategorije;
 
   el("ekran-prijava").hidden = true;
   el("ekran-app").hidden = false;
@@ -233,10 +235,10 @@ async function otvoriMajstora(id) {
       <h2 style="font-size:15px">Šta radi</h2>
       <p class="tiho" style="margin-top:-6px">Označi sve struke — vidjeće poslove iz svake.</p>
       <div class="kutije">
-        ${kategorije.map((k) => `
+        ${zaKutije(m.kategorije).map((k) => `
           <label class="kutija">
             <input type="checkbox" value="${k.id}" ${m.kategorije.includes(k.id) ? "checked" : ""}>
-            ${k.naziv}
+            ${bezHtml(k.naziv)}${k.aktivna === false ? " (ugašen)" : ""}
           </label>`).join("")}
       </div>
 
@@ -429,7 +431,7 @@ el("dugme-nov-majstor").addEventListener("click", () => {
       <div class="kutije">
         ${kategorije.map((k) => `
           <label class="kutija">
-            <input type="checkbox" value="${k.id}"> ${k.naziv}
+            <input type="checkbox" value="${k.id}"> ${bezHtml(k.naziv)}
           </label>`).join("")}
       </div>
       <div class="red-dugmadi">
@@ -621,7 +623,7 @@ async function ucitajPoslove() {
         <div class="posao-vrh">
           ${p.status === "slobodan"
             ? `<select class="znak-izbor" data-kategorija="${p.id}" title="Ispravi struku ako je klijent pogriješio">
-                 ${kategorije.map((k) => `
+                 ${zaIzbor(p.kategorija).map((k) => `
                    <option value="${k.id}" ${k.id === p.kategorija ? "selected" : ""}>
                      ${bezHtml(k.naziv)}
                    </option>`).join("")}
@@ -731,26 +733,119 @@ el("dugme-nov-posao").addEventListener("click", () => {
 
 /* ── Cijene ── */
 
-function prikaziCijene() {
-  el("lista-cijena").innerHTML = kategorije.map((k) => `
-    <label class="polje" style="display:flex;align-items:center;gap:12px">
-      <span style="flex:1;margin:0;text-transform:none;font-size:15px;letter-spacing:0;opacity:1;font-weight:700">
-        ${k.naziv}
-      </span>
-      <input type="number" step="0.5" min="0" value="${k.cijena}" data-cijena="${k.id}"
-             style="width:110px">
-    </label>`).join("");
+async function prikaziCijene() {
+  const r = await api("/api/kategorije");
+  kategorije = r.kategorije;
+  sviZanati = r.sve ?? r.kategorije;
+
+  el("lista-cijena").innerHTML = sviZanati.map((k) => `
+    <article class="posao" style="padding:14px${k.aktivna === false ? ";opacity:.55" : ""}">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <input value="${bezHtml(k.naziv)}" data-zanat-naziv="${k.id}"
+               style="flex:1;min-width:150px;font-weight:800">
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="number" step="0.5" min="0" value="${k.cijena}" data-zanat-cijena="${k.id}"
+                 style="width:92px;text-align:right;font-weight:900">
+          <span style="font-weight:900">€</span>
+        </div>
+        <button class="dugme mala" data-zanat-cuvaj="${k.id}">Sačuvaj</button>
+        <button class="dugme tiha mala" data-zanat-prekidac="${k.id}"
+                data-aktivna="${k.aktivna === false ? "0" : "1"}">
+          ${k.aktivna === false ? "Vrati u ponudu" : "Ugasi"}
+        </button>
+      </div>
+      ${k.aktivna === false
+        ? '<div class="posao-red" style="margin-top:8px">Ugašen — ne nudi se na sajtu ni majstorima.</div>'
+        : ""}
+    </article>`).join("");
 }
 
-el("dugme-sacuvaj-cijene").addEventListener("click", async () => {
-  const cijene = {};
-  document.querySelectorAll("[data-cijena]").forEach((i) => {
-    cijene[i.dataset.cijena] = Number(i.value);
-  });
-  await api("/api/admin-cjenovnik", { method: "POST", body: JSON.stringify({ cijene }) });
-  kategorije = (await api("/api/kategorije")).kategorije;
-  el("poruka-cijene").innerHTML = '<div class="poruka dobro">Cijene su sačuvane.</div>';
-  setTimeout(() => { el("poruka-cijene").innerHTML = ""; }, 2500);
+document.addEventListener("click", async (e) => {
+  const cuvaj = e.target.closest("[data-zanat-cuvaj]");
+  if (cuvaj) {
+    const id = cuvaj.dataset.zanatCuvaj;
+    const naziv = document.querySelector(`[data-zanat-naziv="${id}"]`).value;
+    const cijena = document.querySelector(`[data-zanat-cijena="${id}"]`).value;
+    try {
+      await api("/api/admin-zanat", {
+        method: "POST",
+        body: JSON.stringify({ kategorija: id, naziv, cijena }),
+      });
+      await prikaziCijene();
+      porukaZanati("");
+      poruka(`Sačuvano: ${naziv}`);
+    } catch (greska) { porukaZanati(greska.message); }
+    return;
+  }
+
+  const prekidac = e.target.closest("[data-zanat-prekidac]");
+  if (prekidac) {
+    const id = prekidac.dataset.zanatPrekidac;
+    const pali = prekidac.dataset.aktivna === "0";
+    try {
+      await api("/api/admin-zanat-prekidac", {
+        method: "POST",
+        body: JSON.stringify({ kategorija: id, aktivna: pali }),
+      });
+      await prikaziCijene();
+      porukaZanati("");
+      poruka(pali ? "Zanat je opet u ponudi." : "Zanat je ugašen.");
+    } catch (greska) { porukaZanati(greska.message); }
+  }
+});
+
+/* Greška ostaje na ekranu dok se ne riješi — gašenje zanata zna da kaže
+   da prvo treba raspremiti poslove, a to se ne pročita u tri sekunde. */
+function porukaZanati(tekst) {
+  const gdje = el("poruka-cijene");
+  gdje.innerHTML = tekst ? `<div class="poruka lose">${bezHtml(tekst)}</div>` : "";
+  if (tekst) gdje.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+el("dugme-nov-zanat").addEventListener("click", () => {
+  const prozor = document.createElement("div");
+  prozor.className = "prekrivac";
+  prozor.innerHTML = `
+    <div class="prozor">
+      <h3>Nov zanat</h3>
+      <div id="greska-zanat"></div>
+      <label class="polje">
+        <span>Kako se zove</span>
+        <input id="nz-naziv" placeholder="npr. Stolar" autocomplete="off">
+      </label>
+      <label class="polje">
+        <span>Koliko plaća majstor (€)</span>
+        <input id="nz-cijena" type="number" step="0.5" min="0" placeholder="9" inputmode="decimal">
+      </label>
+      <div class="poruka pazi" style="margin-bottom:0">
+        Odmah se pojavi u formi na sajtu i u spisku struka kad dodaješ majstora.
+        Zasebna stranica za Google se pravi odvojeno.
+      </div>
+      <div class="red-dugmadi">
+        <button class="dugme tiha" data-ne>Odustani</button>
+        <button class="dugme" data-da>Dodaj</button>
+      </div>
+    </div>`;
+  document.body.appendChild(prozor);
+
+  prozor.querySelector("[data-ne]").onclick = () => prozor.remove();
+  prozor.querySelector("[data-da]").onclick = async () => {
+    try {
+      const r = await api("/api/admin-zanat", {
+        method: "POST",
+        body: JSON.stringify({
+          naziv: prozor.querySelector("#nz-naziv").value,
+          cijena: prozor.querySelector("#nz-cijena").value,
+        }),
+      });
+      prozor.remove();
+      await prikaziCijene();
+      poruka(r.nov ? "Zanat je dodat." : "Zanat je izmijenjen.");
+    } catch (greska) {
+      prozor.querySelector("#greska-zanat").innerHTML =
+        `<div class="poruka lose">${greska.message}</div>`;
+    }
+  };
 });
 
 /* ── Jezičci ── */
@@ -790,12 +885,34 @@ function pratiDogadjaje() {
 
 /* ── Sitnice ── */
 
+/* Naziv zanata dolazi iz baze. Rezerva je samo za slučaj da spisak
+   još nije stigao — onda bar ne piše „kucne_popravke". */
 const NAZIVI = {
-  kucne_popravke: "Kućne popravke", klime: "Klime", vodoinstalater: "Vodoinstalater",
-  elektricar: "Električar", sigurnost: "Alarmi i kamere", moler: "Moler",
+  kucne_popravke: "Kućne popravke", klime: "Klime i grijanje", vodoinstalater: "Vodoinstalater",
+  elektricar: "Električar", sigurnost: "Alarmi, kamere, interfoni", moler: "Moler",
   fasader: "Fasader", keramicar: "Keramičar", bravar: "Bravar",
 };
-const nazivKategorije = (id) => NAZIVI[id] ?? id;
+const nazivKategorije = (id) =>
+  sviZanati.find((k) => k.id === id)?.naziv
+  ?? NAZIVI[id]
+  ?? String(id ?? "").replace(/_/g, " ");
+
+/* Za kućice kod majstora: sve što se nudi, plus ugašeno koje on već ima
+   označeno — da mu se čuvanjem tiho ne obriše struka. */
+function zaKutije(vec = []) {
+  const ugasene = sviZanati.filter((k) => k.aktivna === false && vec.includes(k.id));
+  return [...kategorije, ...ugasene];
+}
+
+/* Za padajući spisak na poslu: struka tog posla mora biti u spisku, makar
+   bila ugašena ili sasvim nepoznata — inače pregledač izabere prvu i posao
+   tiho piše tuđu struku. */
+function zaIzbor(sadasnja) {
+  if (kategorije.some((k) => k.id === sadasnja)) return kategorije;
+  const stara = sviZanati.find((k) => k.id === sadasnja);
+  if (stara) return [stara, ...kategorije];
+  return [{ id: sadasnja, naziv: `${nazivKategorije(sadasnja)} (nepoznat)` }, ...kategorije];
+}
 
 function bezHtml(s) {
   const d = document.createElement("div");

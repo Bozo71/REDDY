@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { USLUGE_STRANICE } from "../usluge";
 import {
@@ -148,6 +148,34 @@ const KATEGORIJA_U_SISTEMU: Record<string, string> = {
   "Nešto drugo": "kucne_popravke",
 };
 
+/* Zanati dodati u admin panelu. Spisak sa sajta gore ostaje kakav je —
+   nov zanat se samo ubaci prije „Nešto drugo", pa se izgled ne mijenja.
+   Mapa je modulska da je vidi i posaljiUSistem pri slanju. */
+const DODATI_ZANATI: Record<string, string> = {};
+
+/** Nazivi zanata kojih nema u spisku iznad. Pada tiho — sajt radi i bez njih. */
+async function dovuciNoveZanate(): Promise<string[]> {
+  try {
+    const odgovor = await fetch(`${MAJSTORI_API}/api/kategorije`, {
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!odgovor.ok) return [];
+    const { kategorije } = (await odgovor.json()) as {
+      kategorije?: { id: string; naziv: string }[];
+    };
+    const poznati = new Set(Object.values(KATEGORIJA_U_SISTEMU));
+    const novi: string[] = [];
+    for (const k of kategorije ?? []) {
+      if (!k?.id || !k?.naziv || poznati.has(k.id)) continue;
+      DODATI_ZANATI[k.naziv] = k.id;
+      novi.push(k.naziv);
+    }
+    return novi;
+  } catch {
+    return [];
+  }
+}
+
 /** Vraća true samo ako je sistem stvarno primio zahtjev. */
 async function posaljiUSistem(p: Prijava, linkovi: string[]): Promise<boolean> {
   try {
@@ -156,7 +184,7 @@ async function posaljiUSistem(p: Prijava, linkovi: string[]): Promise<boolean> {
       headers: { "Content-Type": "application/json" },
       signal: AbortSignal.timeout(7000),
       body: JSON.stringify({
-        kategorija: KATEGORIJA_U_SISTEMU[p.problem] ?? "kucne_popravke",
+        kategorija: KATEGORIJA_U_SISTEMU[p.problem] ?? DODATI_ZANATI[p.problem] ?? "kucne_popravke",
         opis: p.opis,
         ime: p.ime,
         prezime: p.prezime,
@@ -569,6 +597,21 @@ function Naslovna({
   const heroRef = useRef<HTMLDivElement>(null);
   const adresaRef = useRef<HTMLInputElement>(null);
 
+  /* Zanati dodati u panelu. Dolaze poslije prvog prikaza, pa stranica ne
+     čeka mrežu — spisak se samo dopuni kad odgovor stigne. */
+  const [noviZanati, setNoviZanati] = useState<string[]>([]);
+  useEffect(() => {
+    let vazi = true;
+    dovuciNoveZanate().then((n) => { if (vazi && n.length) setNoviZanati(n); });
+    return () => { vazi = false; };
+  }, []);
+
+  const spisakProblema = useMemo<string[]>(() => {
+    if (!noviZanati.length) return [...PROBLEMI];
+    const kraj = PROBLEMI.indexOf("Nešto drugo");
+    return [...PROBLEMI.slice(0, kraj), ...noviZanati, ...PROBLEMI.slice(kraj)];
+  }, [noviZanati]);
+
   const naUnosAdrese = (v: string) => {
     setAdresa(v);
     const upit = bezKvacica(v.trim());
@@ -692,8 +735,8 @@ function Naslovna({
               <ChevronDown className={`w-4 h-4 shrink-0 transition ${padajuciOtvoren ? "rotate-180" : ""}`} />
             </button>
             {padajuciOtvoren && (
-              <div className="absolute z-50 top-14 left-0 right-0 rounded-2xl bg-white border border-[var(--beige-border)] shadow-soft overflow-hidden drop-down">
-                {PROBLEMI.map((p) => (
+              <div className="absolute z-50 top-14 left-0 right-0 rounded-2xl bg-white border border-[var(--beige-border)] shadow-soft overflow-y-auto max-h-[min(60vh,24rem)] drop-down">
+                {spisakProblema.map((p) => (
                   <button
                     key={p}
                     onClick={() => { setProblem(p); setPadajuciOtvoren(false); }}
