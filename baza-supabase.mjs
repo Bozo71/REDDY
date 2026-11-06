@@ -79,6 +79,35 @@ export const obrisi = (tabela, upit) =>
 export const pozovi = (ime, parametri = {}) =>
   zovi(`/rpc/${ime}`, { method: "POST", body: JSON.stringify(parametri) });
 
+/* ── Slike ─────────────────────────────────────────────────────────────────
+   Sajt otprema slike pravo iz pregledača anon ključem. Aplikacija za firme
+   nema taj ključ ni biblioteku, pa slika ide kroz nas — server je stavi u
+   isti bucket i vrati javnu adresu. */
+
+const BUCKET = "prijave";
+
+export async function otpremiSliku(putanja, bajtovi, tip = "image/jpeg") {
+  const odgovor = await fetch(
+    `${URL_BAZE.replace(/\/+$/, "")}/storage/v1/object/${BUCKET}/${putanja}`,
+    {
+      method: "POST",
+      headers: {
+        apikey: KLJUC,
+        Authorization: `Bearer ${KLJUC}`,
+        "Content-Type": tip,
+        "Cache-Control": "31536000",
+      },
+      body: bajtovi,
+    },
+  );
+
+  if (!odgovor.ok) {
+    const tekst = await odgovor.text();
+    throw new Error(`Slika (${odgovor.status}): ${tekst.slice(0, 200)}`);
+  }
+  return `${URL_BAZE.replace(/\/+$/, "")}/storage/v1/object/public/${BUCKET}/${putanja}`;
+}
+
 /* ── Cjenovnik ─────────────────────────────────────────────────────────── */
 
 export const KATEGORIJE = [

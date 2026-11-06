@@ -6,11 +6,17 @@
     { "source": "/majstori", "destination": "/majstori/index.html" },
     { "source": "/majstori/", "destination": "/majstori/index.html" },
     { "source": "/majstori/admin", "destination": "/majstori/admin.html" },
-    { "source": "/((?!api/|majstori).*)", "destination": "/index.html" }
+    { "source": "/firme", "destination": "/firme/index.html" },
+    { "source": "/firme/", "destination": "/firme/index.html" },
+    { "source": "/((?!api/|majstori|firme).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
       "source": "/majstori/sw.js",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+    },
+    {
+      "source": "/firme/sw.js",
       "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
     }
   ]

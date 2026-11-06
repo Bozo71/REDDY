@@ -82,6 +82,7 @@
       Problemi <span id="broj-problema" class="znak crvena" hidden></span>
     </button>
     <button class="jezicak" data-jezicak="poslovi" type="button">Poslovi</button>
+    <button class="jezicak" data-jezicak="firme" type="button">Firme</button>
     <button class="jezicak" data-jezicak="cijene" type="button">Zanati</button>
   </nav>
 
@@ -126,6 +127,20 @@
         <button id="dugme-nov-posao" class="dugme mala" style="margin-left:auto">+ Nov posao</button>
       </div>
       <div id="lista-poslovi"></div>
+    </section>
+
+    <section id="dio-firme" hidden>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <h1 style="margin:0">Firme</h1>
+        <button id="dugme-nova-firma" class="dugme mala" style="margin-left:auto">+ Nova firma</button>
+      </div>
+      <p class="tiho">
+        Firme sa više poslovnica. Svaka poslovnica dobija svoj nalog i prijavljuje
+        kvar na <b>/firme</b> — adresa ide sama, a posao pada u isti spisak kao i
+        poslovi sa sajta. Direktor vidi sve poslovnice, ali ništa ne dira.
+      </p>
+      <div id="poruka-firme"></div>
+      <div id="lista-firme"></div>
     </section>
 
     <section id="dio-cijene" hidden>

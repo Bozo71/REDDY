@@ -1,0 +1,105 @@
+/* Dodatak na /majstori/stil.css — samo ono što ima aplikacija za firme.
+   Sve ostalo (boje, dugmad, polja, kartice) dolazi odande. */
+
+/* Glavno dugme. Kvar se prijavljuje u prolazu, često jednom rukom. */
+.veliko-dugme {
+  padding: 20px;
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+/* Koraci u prozoru za prijavu kvara. */
+.korak-traka {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.korak-traka span {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--beige-border);
+}
+.korak-traka span.gotov { background: var(--sunshine-deep); }
+
+/* Izbor struke — krupne kocke, ne padajući spisak. Bira ga neko ko
+   nije majstor, pa mora da vidi sve odjednom. */
+.struke {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.struka {
+  border: 1px solid var(--beige-border);
+  background: #fff;
+  border-radius: 13px;
+  padding: 14px 12px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+  color: var(--plum-deep);
+}
+.struka.izabrana {
+  border-color: var(--sunshine-deep);
+  background: oklch(0.86 0.17 88 / 0.18);
+  box-shadow: 0 0 0 2px oklch(0.86 0.17 88 / 0.35);
+}
+
+/* Dodavanje slike. */
+.slika-polje {
+  border: 2px dashed var(--beige-border);
+  border-radius: 14px;
+  padding: 18px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  background: var(--beige);
+  display: block;
+  margin-bottom: 13px;
+}
+.slika-polje input { display: none; }
+
+.izabrane-slike { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 13px; }
+.izabrane-slike figure {
+  position: relative;
+  margin: 0;
+  line-height: 0;
+}
+.izabrane-slike img {
+  width: 76px;
+  height: 76px;
+  object-fit: cover;
+  border-radius: 11px;
+  border: 1px solid var(--beige-border);
+}
+.izabrane-slike button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 23px;
+  height: 23px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--plum-deep);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* Status prijave. */
+.status { display: flex; align-items: center; gap: 7px; font-weight: 800; font-size: 13.5px; }
+.tacka { width: 9px; height: 9px; border-radius: 999px; flex-shrink: 0; }
+.tacka.ceka { background: var(--sunshine-deep); }
+.tacka.uzeo { background: oklch(0.72 0.15 155); }
+.tacka.gotov { background: oklch(0.52 0.08 305); }
+
+@media (max-width: 420px) {
+  .struke { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "REDDY — Prijava kvara",
+  "short_name": "REDDY kvar",
+  "description": "Prijavite kvar u poslovnici. Majstor stiže na vašu adresu.",
+  "start_url": "/firme/",
+  "scope": "/firme/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1C1829",
+  "theme_color": "#2B2640",
+  "lang": "sr-Latn-ME",
+  "icons": [
+    { "src": "/majstori/ikona-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/majstori/ikona-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/majstori/ikona-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

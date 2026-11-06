@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="sr-Latn-ME">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2B2640">
+<title>REDDY — Prijava kvara</title>
+<link rel="manifest" href="/firme/manifest.json">
+<link rel="icon" href="/majstori/ikona-192.png">
+<link rel="apple-touch-icon" href="/majstori/ikona-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="REDDY">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;900&display=swap">
+<link rel="stylesheet" href="/majstori/stil.css">
+<link rel="stylesheet" href="/firme/stil.css">
+<script>
+  /* Ko je već prijavljen ne smije ni na tren vidjeti ekran za prijavu. */
+  try {
+    if (localStorage.getItem("reddy-firma-token")) {
+      document.documentElement.classList.add("vec-prijavljen");
+    }
+  } catch (e) { /* localStorage zabranjen — pokaži prijavu */ }
+</script>
+</head>
+<body>
+
+<!-- ── Prijava ── -->
+<div id="ekran-prijava" class="prijava-ekran plum-pozadina">
+  <div class="prijava-kutija">
+    <div class="prijava-logo">
+      <img src="/majstori/ikona-192.png" alt="">
+      <div>REDDY</div>
+      <div class="tiho" style="font-size:13px;font-weight:700">Prijava kvara</div>
+    </div>
+
+    <div id="greska-prijava"></div>
+
+    <form id="forma-prijava">
+      <label class="polje">
+        <span>Korisničko ime</span>
+        <input id="p-nadimak" autocomplete="username" autocapitalize="none"
+               spellcheck="false" placeholder="socerbet-delta" required>
+      </label>
+      <label class="polje">
+        <span>Šifra</span>
+        <input id="p-sifra" type="password" autocomplete="current-password"
+               placeholder="••••••••" required>
+      </label>
+      <button class="dugme" type="submit">Uđi</button>
+    </form>
+  </div>
+</div>
+
+<!-- ── Aplikacija ── -->
+<div id="ekran-app" hidden>
+  <header class="vrh">
+    <div class="logo"><img src="/majstori/ikona-192.png" alt=""> REDDY</div>
+    <div class="vrh-desno">
+      <button id="dugme-zvono" class="dugme tiha mala" type="button">Obavještenja</button>
+      <button id="dugme-izlaz" class="dugme tiha mala" type="button">Izađi</button>
+    </div>
+  </header>
+
+  <div class="stanje-traka">
+    <div class="stanje-stavka">
+      <span class="stanje-ime" id="s-naslov">Poslovnica</span>
+      <span class="stanje-broj" id="s-ime" style="font-size:15px">—</span>
+    </div>
+    <div class="stanje-stavka" id="kutija-adresa">
+      <span class="stanje-ime">Adresa</span>
+      <span class="stanje-broj" id="s-adresa" style="font-size:15px">—</span>
+    </div>
+    <div class="stanje-stavka">
+      <span class="stanje-ime">Prijavljeno</span>
+      <span class="stanje-broj" id="s-broj">0</span>
+    </div>
+  </div>
+
+  <main class="omot">
+    <div id="obavjestenje"></div>
+
+    <!-- Prijava kvara — vidi je samo poslovnica, direktor ne. -->
+    <section id="dio-prijavi">
+      <button id="dugme-nov-kvar" class="dugme veliko-dugme" type="button">
+        Prijavi kvar
+      </button>
+    </section>
+
+    <h2 id="naslov-spiska">Moje prijave</h2>
+    <div id="lista-prijave"></div>
+  </main>
+</div>
+
+<script src="/majstori/push-klijent.js"></script>
+<script src="/firme/app.js"></script>
+</body>
+</html>

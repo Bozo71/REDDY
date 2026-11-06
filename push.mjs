@@ -83,14 +83,20 @@ export async function javiZaNovPosao(posao) {
     const cijena = Number(posao.cijena).toFixed(2).replace(/\.00$/, "");
     const kratko = String(posao.opis ?? "").slice(0, 90);
 
+    /* Posao iz poslovnice nosi ime firme, da se na zaključanom ekranu
+       odmah vidi da je ugovoreni klijent, a ne obična prijava sa sajta. */
+    const odKoga = posao.firma
+      ? `${posao.firma}${posao.poslovnica ? " · " + posao.poslovnica : ""}`
+      : null;
+
     const ishodi = await Promise.allSettled([
       ...majstorske.map((p) => posaljiJednom(p, {
         naslov: `Nov posao — ${naziv}`,
-        tekst: `${cijena} € · ${kratko}`,
+        tekst: odKoga ? `${cijena} € · ${odKoga} · ${kratko}` : `${cijena} € · ${kratko}`,
         putanja: "/majstori",
       })),
       ...adminske.map((p) => posaljiJednom(p, {
-        naslov: `Nov zahtjev — ${naziv}`,
+        naslov: odKoga ? `${odKoga} — ${naziv}` : `Nov zahtjev — ${naziv}`,
         tekst: kratko,
         putanja: "/majstori/admin",
       })),

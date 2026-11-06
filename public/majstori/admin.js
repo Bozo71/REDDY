@@ -629,6 +629,9 @@ async function ucitajPoslove() {
                    </option>`).join("")}
                </select>`
             : `<span class="znak zelena">${nazivKategorije(p.kategorija)}</span>`}
+          ${p.firma
+            ? `<span class="znak">🏢 ${bezHtml(p.firma)}${p.poslovnica ? " · " + bezHtml(p.poslovnica) : ""}</span>`
+            : ""}
           ${zavrsen ? '<span class="znak zelena">✓ završen</span>' : ""}
           ${prijavljen ? '<span class="znak crvena">prijavljen problem</span>' : ""}
           <span class="cijena">${novac(p.cijena)}</span>
@@ -848,6 +851,314 @@ el("dugme-nov-zanat").addEventListener("click", () => {
   };
 });
 
+/* ── Firme ──────────────────────────────────────────────────────────────
+   Firma ima poslovnice, poslovnica ima nalog kojim ulazi na /firme.
+   Direktorov nalog visi na firmi, bez poslovnice — on vidi sve. */
+
+async function ucitajFirme() {
+  let r;
+  try {
+    r = await api("/api/admin-firme");
+  } catch (greska) {
+    el("lista-firme").innerHTML = "";
+    return porukaFirme(greska.message);
+  }
+  porukaFirme("");
+
+  if (!r.firme.length) {
+    el("lista-firme").innerHTML =
+      '<div class="prazno">Još nema nijedne firme. Dodaj prvu gore desno.</div>';
+    return;
+  }
+
+  el("lista-firme").innerHTML = r.firme.map((f) => `
+    <article class="posao"${f.pauzirana ? ' style="opacity:.55"' : ""}>
+      <div class="posao-vrh">
+        <span class="znak zuta">${bezHtml(f.naziv)}</span>
+        ${f.pauzirana ? '<span class="znak crvena">pauzirana</span>' : ""}
+        <span class="tiho" style="margin-left:auto;font-size:13px">
+          ${poslovnica(f.poslovnice.length)} · ${poslova(f.prijava)}
+          ${f.nezauzeto ? ` · <b style="color:var(--alarm)">${f.nezauzeto} čeka</b>` : ""}
+        </span>
+      </div>
+      <div class="posao-red">
+        ${f.pib ? `PIB ${bezHtml(f.pib)} · ` : ""}PDV ${f.pdv_stopa}%
+        ${f.adresa ? ` · ${bezHtml(f.adresa)}` : ""}
+      </div>
+
+      ${f.direktori.length ? `
+        <div class="posao-red" style="margin-top:8px">
+          <b>Direktor:</b> ${f.direktori.map((d) =>
+            `${bezHtml(d.ime)} (${bezHtml(d.nadimak)})${d.pauziran ? " — pauziran" : ""}`
+          ).join(", ")}
+        </div>` : ""}
+
+      <div style="margin-top:10px">
+        ${f.poslovnice.map((p) => `
+          <div class="poslovnica-red">
+            <div style="flex:1;min-width:150px">
+              <b>${bezHtml(p.naziv)}</b>${p.pauzirana ? " <span class=\"znak crvena\">pauzirana</span>" : ""}
+              <div class="posao-red" style="margin:0">
+                📍 ${bezHtml(p.adresa)}${p.telefon ? ` · ${formatBroj(p.telefon)}` : ""}
+              </div>
+              <div class="posao-red" style="margin:0">
+                ${p.nalozi.length
+                  ? p.nalozi.map((n) =>
+                      `🔑 ${bezHtml(n.nadimak)}${n.pauziran ? " (pauziran)" : ""}`).join(" · ")
+                  : '<span style="color:var(--alarm)">nema naloga — ne može da se uloguje</span>'}
+              </div>
+            </div>
+            <div class="poslovnica-dugmad">
+              <button class="dugme tiha mala" data-izmijeni-poslovnicu="${p.id}">Izmijeni</button>
+              ${p.nalozi.length
+                ? p.nalozi.map((n) => `
+                    <button class="dugme tiha mala" data-nova-sifra="${n.id}"
+                            data-ime="${bezHtml(n.ime)}">Nova šifra</button>
+                    <button class="dugme tiha mala" data-nalog-prekidac="${n.id}"
+                            data-pauziran="${n.pauziran ? "1" : "0"}">
+                      ${n.pauziran ? "Vrati" : "Pauziraj"}
+                    </button>`).join("")
+                : `<button class="dugme mala" data-nov-nalog="${p.id}"
+                           data-firma="${f.id}">Napravi nalog</button>`}
+            </div>
+          </div>`).join("")}
+      </div>
+
+      <div class="red-dugmadi">
+        <button class="dugme tiha mala" data-nova-poslovnica="${f.id}">+ Poslovnica</button>
+        <button class="dugme tiha mala" data-nov-direktor="${f.id}">+ Direktor</button>
+        <button class="dugme tiha mala" data-izmijeni-firmu="${f.id}">Izmijeni firmu</button>
+      </div>
+    </article>`).join("");
+
+  // Podaci trebaju prozorima za izmjenu — drže se ovdje, bez novog poziva.
+  firmeKes = r.firme;
+}
+
+let firmeKes = [];
+
+function porukaFirme(tekst) {
+  el("poruka-firme").innerHTML = tekst
+    ? `<div class="poruka lose">${bezHtml(tekst)}</div>`
+    : "";
+}
+
+/** Prozor sa poljima. polja = [{id, naziv, vrijednost, tip, placeholder}] */
+function prozorForme(naslov, polja, naPotvrdu, dugmeTekst = "Sačuvaj") {
+  const prozor = document.createElement("div");
+  prozor.className = "prekrivac";
+  prozor.innerHTML = `
+    <div class="prozor">
+      <h3>${bezHtml(naslov)}</h3>
+      <div class="greska-forme"></div>
+      ${polja.map((p) => `
+        <label class="polje">
+          <span>${bezHtml(p.naziv)}</span>
+          <input id="pf-${p.id}" type="${p.tip ?? "text"}"
+                 value="${bezHtml(p.vrijednost ?? "")}"
+                 placeholder="${bezHtml(p.placeholder ?? "")}"
+                 autocomplete="off" ${p.tip === "number" ? 'step="1" min="0"' : ""}>
+        </label>`).join("")}
+      <div class="red-dugmadi">
+        <button class="dugme tiha" data-ne type="button">Odustani</button>
+        <button class="dugme" data-da type="button">${bezHtml(dugmeTekst)}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(prozor);
+
+  prozor.querySelector("[data-ne]").onclick = () => prozor.remove();
+  prozor.querySelector("[data-da]").onclick = async () => {
+    const dugme = prozor.querySelector("[data-da]");
+    dugme.disabled = true;
+    const vrijednosti = {};
+    polja.forEach((p) => { vrijednosti[p.id] = prozor.querySelector(`#pf-${p.id}`).value; });
+
+    try {
+      await naPotvrdu(vrijednosti, prozor);
+    } catch (greska) {
+      prozor.querySelector(".greska-forme").innerHTML =
+        `<div class="poruka lose">${bezHtml(greska.message)}</div>`;
+      dugme.disabled = false;
+    }
+  };
+  prozor.querySelector("input")?.focus();
+  return prozor;
+}
+
+/** Šifra se vidi jednom. Prozor koji je pokaže mora da se prepiše. */
+function pokaziSifru(ime, nadimak, sifra) {
+  const prozor = document.createElement("div");
+  prozor.className = "prekrivac";
+  prozor.innerHTML = `
+    <div class="prozor">
+      <h3>Nalog je spreman</h3>
+      <p class="tiho" style="margin-top:-6px">
+        Prepiši ovo i daj ${bezHtml(ime)}. Šifra se poslije ne može pročitati,
+        samo zamijeniti novom.
+      </p>
+      <div class="sifra-kutija">
+        <div><span>Adresa</span><b>thereddy.me/firme</b></div>
+        <div><span>Korisničko ime</span><b>${bezHtml(nadimak)}</b></div>
+        <div><span>Šifra</span><b>${bezHtml(sifra)}</b></div>
+      </div>
+      <div class="red-dugmadi">
+        <button class="dugme tiha" data-kopiraj type="button">Kopiraj</button>
+        <button class="dugme" data-ne type="button">Zapisao sam</button>
+      </div>
+    </div>`;
+  document.body.appendChild(prozor);
+
+  prozor.querySelector("[data-ne]").onclick = () => prozor.remove();
+  prozor.querySelector("[data-kopiraj]").onclick = async () => {
+    const tekst = `REDDY — prijava kvara\nAdresa: https://www.thereddy.me/firme`
+      + `\nKorisničko ime: ${nadimak}\nŠifra: ${sifra}`;
+    try {
+      await navigator.clipboard.writeText(tekst);
+      poruka("Kopirano — možeš da proslijediš.");
+    } catch {
+      poruka("Pregledač ne da kopiranje. Prepiši ručno.");
+    }
+  };
+}
+
+document.addEventListener("click", async (e) => {
+  const nadjiFirmu = (id) => firmeKes.find((f) => f.id === id);
+  const nadjiPoslovnicu = (id) => firmeKes
+    .flatMap((f) => f.poslovnice).find((p) => p.id === id);
+
+  const novaFirma = e.target.closest("#dugme-nova-firma");
+  const izmijeniFirmu = e.target.closest("[data-izmijeni-firmu]");
+  if (novaFirma || izmijeniFirmu) {
+    const f = izmijeniFirmu ? nadjiFirmu(izmijeniFirmu.dataset.izmijeniFirmu) : null;
+    prozorForme(f ? `Firma: ${f.naziv}` : "Nova firma", [
+      { id: "naziv", naziv: "Naziv firme", vrijednost: f?.naziv, placeholder: "Socerbet" },
+      { id: "pib", naziv: "PIB (za račun)", vrijednost: f?.pib, placeholder: "02345678" },
+      { id: "adresa", naziv: "Sjedište (za račun)", vrijednost: f?.adresa, placeholder: "Bulevar Svetog Petra Cetinjskog 1" },
+      { id: "pdv_stopa", naziv: "PDV %  (0 ako nisi u sistemu PDV-a)", vrijednost: f?.pdv_stopa ?? 21, tip: "number" },
+    ], async (v, prozor) => {
+      await api("/api/admin-firma", {
+        method: "POST",
+        body: JSON.stringify({ ...(f ? { id: f.id } : {}), ...v }),
+      });
+      prozor.remove();
+      await ucitajFirme();
+      poruka(f ? "Firma je izmijenjena." : "Firma je dodata.");
+    });
+    return;
+  }
+
+  const novaPoslovnica = e.target.closest("[data-nova-poslovnica]");
+  const izmijeniPoslovnicu = e.target.closest("[data-izmijeni-poslovnicu]");
+  if (novaPoslovnica || izmijeniPoslovnicu) {
+    const p = izmijeniPoslovnicu
+      ? nadjiPoslovnicu(izmijeniPoslovnicu.dataset.izmijeniPoslovnicu) : null;
+    prozorForme(p ? `Poslovnica: ${p.naziv}` : "Nova poslovnica", [
+      { id: "naziv", naziv: "Naziv poslovnice", vrijednost: p?.naziv, placeholder: "Delta" },
+      { id: "adresa", naziv: "Adresa — po njoj majstor dolazi", vrijednost: p?.adresa, placeholder: "Cetinjski put bb" },
+      { id: "lokacija", naziv: "Grad", vrijednost: p?.lokacija ?? "Podgorica" },
+      { id: "telefon", naziv: "Telefon poslovnice", vrijednost: p?.telefon, placeholder: "067 111 111" },
+    ], async (v, prozor) => {
+      await api("/api/admin-poslovnica", {
+        method: "POST",
+        body: JSON.stringify(p
+          ? { id: p.id, ...v }
+          : { firma_id: novaPoslovnica.dataset.novaPoslovnica, ...v }),
+      });
+      prozor.remove();
+      await ucitajFirme();
+      poruka(p ? "Poslovnica je izmijenjena." : "Poslovnica je dodata. Sad joj napravi nalog.");
+    });
+    return;
+  }
+
+  const novNalog = e.target.closest("[data-nov-nalog]");
+  const novDirektor = e.target.closest("[data-nov-direktor]");
+  if (novNalog || novDirektor) {
+    const direktor = Boolean(novDirektor);
+    const poslovnicaId = novNalog?.dataset.novNalog;
+    const firmaId = direktor ? novDirektor.dataset.novDirektor : novNalog.dataset.firma;
+    const p = poslovnicaId ? nadjiPoslovnicu(poslovnicaId) : null;
+    const f = nadjiFirmu(firmaId);
+
+    const predlog = uNadimak(direktor
+      ? `${f?.naziv ?? ""} direktor`
+      : `${f?.naziv ?? ""} ${p?.naziv ?? ""}`);
+
+    prozorForme(direktor ? "Nalog za direktora" : `Nalog: ${p?.naziv ?? ""}`, [
+      { id: "ime", naziv: "Ko je (ime ili naziv)", vrijednost: direktor ? "" : p?.naziv,
+        placeholder: direktor ? "Marko Vujović" : "Delta" },
+      { id: "nadimak", naziv: "Korisničko ime za prijavu", vrijednost: predlog },
+      { id: "sifra", naziv: "Šifra — prazno znači da je smislim ja", vrijednost: "" },
+    ], async (v, prozor) => {
+      const r = await api("/api/admin-firma-nalog", {
+        method: "POST",
+        body: JSON.stringify({
+          firma_id: firmaId,
+          poslovnica_id: poslovnicaId ?? null,
+          vrsta: direktor ? "direktor" : "poslovnica",
+          ...v,
+        }),
+      });
+      prozor.remove();
+      await ucitajFirme();
+      pokaziSifru(v.ime || r.nadimak, r.nadimak, r.sifra);
+    }, "Napravi");
+    return;
+  }
+
+  const novaSifra = e.target.closest("[data-nova-sifra]");
+  if (novaSifra) {
+    const id = novaSifra.dataset.novaSifra;
+    const ime = novaSifra.dataset.ime;
+    if (!confirm(`Napraviti novu šifru za ${ime}? Stara odmah prestaje da važi.`)) return;
+    try {
+      const r = await api("/api/admin-firma-nalog", {
+        method: "POST",
+        body: JSON.stringify({ id, ime, nova_sifra: true }),
+      });
+      const nalog = firmeKes
+        .flatMap((f) => [...f.direktori, ...f.poslovnice.flatMap((p) => p.nalozi)])
+        .find((n) => n.id === id);
+      pokaziSifru(ime, nalog?.nadimak ?? "", r.sifra);
+    } catch (greska) { porukaFirme(greska.message); }
+    return;
+  }
+
+  const prekidac = e.target.closest("[data-nalog-prekidac]");
+  if (prekidac) {
+    try {
+      await api("/api/admin-firma-nalog-prekidac", {
+        method: "POST",
+        body: JSON.stringify({
+          id: prekidac.dataset.nalogPrekidac,
+          pauziran: prekidac.dataset.pauziran === "0",
+        }),
+      });
+      await ucitajFirme();
+      poruka(prekidac.dataset.pauziran === "0" ? "Nalog je pauziran." : "Nalog opet radi.");
+    } catch (greska) { porukaFirme(greska.message); }
+  }
+});
+
+// 1 poslovnica · 2 poslovnice · 5 poslovnica.
+function poslovnica(n) {
+  const zadnja = n % 10;
+  const dvije = n % 100;
+  if (dvije >= 11 && dvije <= 14) return `${n} poslovnica`;
+  if (zadnja === 1) return `${n} poslovnica`;
+  if (zadnja >= 2 && zadnja <= 4) return `${n} poslovnice`;
+  return `${n} poslovnica`;
+}
+
+/* Korisničko ime iz naziva: „Socerbet Delta" → socerbet-delta. */
+function uNadimak(tekst) {
+  return String(tekst)
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/đ/gi, "d").replace(/ć|č/gi, "c").replace(/š/gi, "s").replace(/ž/gi, "z")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "").slice(0, 40);
+}
+
 /* ── Jezičci ── */
 
 document.querySelectorAll(".jezicak").forEach((j) => {
@@ -860,12 +1171,14 @@ document.querySelectorAll(".jezicak").forEach((j) => {
     el("dio-prihvaceni").hidden = koji !== "prihvaceni";
     el("dio-problemi").hidden = koji !== "problemi";
     el("dio-poslovi").hidden = koji !== "poslovi";
+    el("dio-firme").hidden = koji !== "firme";
     el("dio-cijene").hidden = koji !== "cijene";
 
     if (koji === "majstori") await ucitajMajstore();
     if (koji === "prihvaceni") await ucitajPrihvacene();
     if (koji === "problemi") await ucitajProbleme();
     if (koji === "poslovi") await ucitajPoslove();
+    if (koji === "firme") await ucitajFirme();
     if (koji === "cijene") prikaziCijene();
   });
 });

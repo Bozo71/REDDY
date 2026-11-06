@@ -1,7 +1,7 @@
 /* Sve API rute, kao jedna Vercel funkcija.
    Lokalno isto radi — server.mjs ga poziva. */
 
-import { randomInt } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 
 import {
   javniKljuc, zapamtiPretplatu, zaboraviPretplatu, javiZaNovPosao, posaljiProbu,
@@ -10,7 +10,7 @@ import {
 import {
   KATEGORIJE, KLJUCEVI_FALE, citaj, citajJedan, upisi, izmijeni, obrisi, pozovi,
   hash, provjeriHash, normalizujTelefon, napraviSesiju, nadjiSesiju,
-  obrisiSesiju, stanjeMajstora, cijenaKategorije, sada,
+  obrisiSesiju, stanjeMajstora, cijenaKategorije, otpremiSliku, sada,
 } from "../baza-supabase.mjs";
 
 /* ── Sitnice ───────────────────────────────────────────────────────────── */
@@ -51,6 +51,22 @@ async function trazenAdmin(req, res) {
   return s;
 }
 
+/* Nalog firme: poslovnica prijavljuje kvar i vidi svoje, direktor vidi
+   cijelu firmu i ništa ne dira. Oba ulaze na /firme. */
+async function trazenaFirma(req, res) {
+  const s = await nadjiSesiju(tokenIz(req));
+  if (!s || s.vrsta !== "firma") { greska(res, 401, "Niste prijavljeni."); return null; }
+
+  const n = await citajJedan(
+    "firma_nalozi",
+    `id=eq.${s.ko_id}&select=*,firme(id,naziv,pauzirana),poslovnice(id,naziv,adresa,lokacija,telefon,pauzirana)`,
+  );
+  if (!n) { greska(res, 401, "Nalog ne postoji."); return null; }
+  if (n.pauziran) { greska(res, 403, "Nalog je pauziran. Javite se Reddy-ju."); return null; }
+  if (n.firme?.pauzirana) { greska(res, 403, "Nalog firme je pauziran."); return null; }
+  return n;
+}
+
 const kategorijeMajstora = (m) => (Array.isArray(m.kategorije) ? m.kategorije : []);
 
 /* Naziv zanata → oznaka pod kojom živi u bazi: bez kvačica, mala slova,
@@ -69,6 +85,15 @@ function uOznaku(naziv) {
    redoslijed i aktivna. Umjesto sirove greške iz baze, reci šta da se radi. */
 function bazaNijeSpremna(e) {
   return /naziv|redoslijed|aktivna/.test(e.message) && /column|kolon/i.test(e.message);
+}
+
+/* Šifra za poslovnicu. Bez slova koja se miješaju (O/0, I/l/1) — čita se
+   sa papira i kuca na telefonu, pa greška u prepisu košta poziv. */
+function novaSifra() {
+  const znaci = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  let s = "";
+  for (let i = 0; i < 8; i++) s += znaci[randomInt(0, znaci.length)];
+  return `${s.slice(0, 4)}-${s.slice(4)}`;
 }
 
 /** Da li zanat postoji u bazi — provjera umjesto spiska iz koda. */
@@ -343,6 +368,146 @@ const rute = {
     posalji(res, 201, { ok: true, id: posao.id });
   },
 
+  /* ── Firme sa više poslovnica ──────────────────────────────────────────
+     Poslovnica prijavi kvar, a posao pada u isti spisak u kojem su i poslovi
+     sa sajta — majstori i naplata ostaju nedirnuti. Jedina razlika je što
+     posao nosi poslovnicu, pa znamo za koga je rađeno. */
+
+  "POST /api/firma-prijava": async (req, res) => {
+    const t = await tijelo(req);
+    const nadimak = String(t.nadimak ?? "").trim().toLowerCase();
+
+    const n = await citajJedan(
+      "firma_nalozi",
+      `nadimak=eq.${encodeURIComponent(nadimak)}&select=*,firme(naziv,pauzirana)`,
+    );
+    if (!n || !provjeriHash(t.sifra, n.sifra_hash)) {
+      return greska(res, 401, "Pogrešno korisničko ime ili šifra.");
+    }
+    if (n.pauziran) return greska(res, 403, "Nalog je pauziran. Javite se Reddy-ju.");
+    if (n.firme?.pauzirana) return greska(res, 403, "Nalog firme je pauziran.");
+
+    posalji(res, 200, { token: await napraviSesiju("firma", n.id), ime: n.ime });
+  },
+
+  "GET /api/firma-ja": async (req, res) => {
+    const n = await trazenaFirma(req, res); if (!n) return;
+    posalji(res, 200, {
+      ime: n.ime,
+      vrsta: n.vrsta,
+      firma: n.firme?.naziv ?? "",
+      poslovnica: n.poslovnice
+        ? { naziv: n.poslovnice.naziv, adresa: n.poslovnice.adresa, telefon: n.poslovnice.telefon }
+        : null,
+    });
+  },
+
+  /* Slika ide kroz nas, pa aplikacija za firme ne mora da nosi ključ baze.
+     Pregledač je prije slanja smanji — ovdje se samo provjeri i spusti. */
+  "POST /api/firma-slika": async (req, res) => {
+    const n = await trazenaFirma(req, res); if (!n) return;
+    const { podaci, tip } = await tijelo(req);
+
+    const cisto = String(podaci ?? "").replace(/^data:[^,]*,/, "");
+    if (!cisto) return greska(res, 400, "Nema slike.");
+
+    const bajtovi = Buffer.from(cisto, "base64");
+    if (!bajtovi.length) return greska(res, 400, "Slika nije čitljiva.");
+    if (bajtovi.length > 4_000_000) {
+      return greska(res, 413, "Slika je prevelika. Pokušajte sa manjom.");
+    }
+
+    const vrsta = /^image\/(jpeg|png|webp)$/.test(tip ?? "") ? tip : "image/jpeg";
+    const kraj = { "image/png": "png", "image/webp": "webp" }[vrsta] ?? "jpg";
+
+    try {
+      const adresa = await otpremiSliku(
+        `${randomUUID().replace(/-/g, "")}.${kraj}`, bajtovi, vrsta,
+      );
+      posalji(res, 201, { adresa });
+    } catch (e) {
+      console.warn("[firma-slika]", e.message);
+      greska(res, 502, "Slika nije mogla da se sačuva. Pošaljite prijavu bez nje.");
+    }
+  },
+
+  "POST /api/firma-zahtjev": async (req, res) => {
+    const n = await trazenaFirma(req, res); if (!n) return;
+    if (n.vrsta !== "poslovnica" || !n.poslovnice) {
+      return greska(res, 403, "Kvar prijavljuje poslovnica, ne direktor.");
+    }
+    if (n.poslovnice.pauzirana) return greska(res, 403, "Poslovnica je pauzirana.");
+
+    const t = await tijelo(req);
+    const opis = String(t.opis ?? "").trim();
+    if (opis.length < 5) return greska(res, 400, "Opišite kvar u par riječi.");
+
+    let kategorija = String(t.kategorija ?? "");
+    if (!(await zanatPostoji(kategorija))) kategorija = "kucne_popravke";
+
+    const posao = await upisi("poslovi", {
+      kategorija,
+      opis: opis.slice(0, 1000),
+      lokacija: n.poslovnice.lokacija || "Podgorica",
+      // Adresa je adresa poslovnice — ne kuca je niko i ne može da pogriješi.
+      adresa: n.poslovnice.adresa,
+      stan: String(t.gdje ?? "").slice(0, 120) || null,
+      fotografije: Array.isArray(t.fotografije) ? t.fotografije.slice(0, 8) : [],
+      termin: String(t.termin ?? "").slice(0, 120) || null,
+      cijena: await cijenaKategorije(kategorija),
+      status: "slobodan",
+      izvor: "firma",
+      poslovnica_id: n.poslovnice.id,
+    });
+
+    /* Kontakt je sama poslovnica — majstor zove njih, ne direktora.
+       Telefon poslovnice, ako ga nema onda ime naloga bez broja. */
+    await upisi("kontakti", {
+      posao_id: posao.id,
+      ime: n.firme?.naziv ?? "Firma",
+      prezime: n.poslovnice.naziv,
+      email: null,
+      telefon: normalizujTelefon(n.poslovnice.telefon ?? "") || "—",
+    });
+
+    await javiZaNovPosao({
+      ...posao,
+      firma: n.firme?.naziv,
+      poslovnica: n.poslovnice.naziv,
+    }).catch(() => {});
+
+    posalji(res, 201, { ok: true, id: posao.id });
+  },
+
+  /* Poslovnica vidi svoje prijave, direktor sve iz svoje firme. */
+  "GET /api/firma-prijave": async (req, res) => {
+    const n = await trazenaFirma(req, res); if (!n) return;
+
+    const filter = n.vrsta === "direktor"
+      ? `firma_id=eq.${n.firma_id}`
+      : `poslovnica_id=eq.${n.poslovnica_id}`;
+
+    const redovi = await citaj(
+      "prijave_firmi", `${filter}&order=napravljen.desc&limit=200`,
+    );
+
+    posalji(res, 200, {
+      vrsta: n.vrsta,
+      prijave: redovi.map((p) => ({
+        id: p.id,
+        poslovnica: p.poslovnica,
+        kategorija: p.kategorija,
+        opis: p.opis,
+        slike: razbijSlike(p.fotografije),
+        status: p.status,
+        napravljen: p.napravljen,
+        // Ime majstora tek kad neko uzme posao — dotad nema koga prikazati.
+        majstor: p.majstor_ime ?? null,
+        majstor_telefon: p.majstor_telefon ?? null,
+      })),
+    });
+  },
+
   /* ── Admin ── */
 
   "POST /api/admin-prijava": async (req, res) => {
@@ -468,11 +633,18 @@ const rute = {
 
   "GET /api/admin-poslovi": async (req, res) => {
     if (!(await trazenAdmin(req, res))) return;
-    const redovi = await citaj(
-      "poslovi",
-      `select=*,kontakti(ime,prezime,email,telefon),majstori!poslovi_kupac_id_fkey(ime),` +
-      `kupovine(stanje,vrijeme)&order=napravljen.desc&limit=200`,
-    );
+    const osnovno = `select=*,kontakti(ime,prezime,email,telefon),` +
+      `majstori!poslovi_kupac_id_fkey(ime),kupovine(stanje,vrijeme)`;
+    const kraj = "&order=napravljen.desc&limit=200";
+
+    /* Poslovnica se traži samo ako tabela postoji. Dok se supabase-firme.sql
+       ne pokrene, spisak poslova mora da radi kao i do sad. */
+    let redovi;
+    try {
+      redovi = await citaj("poslovi", `${osnovno},poslovnice(naziv,firme(naziv))${kraj}`);
+    } catch {
+      redovi = await citaj("poslovi", osnovno + kraj);
+    }
 
     posalji(res, 200, {
       poslovi: redovi.map((p) => {
@@ -486,6 +658,8 @@ const rute = {
           klijent_email: ko.email, klijent_telefon: ko.telefon,
           kupac_ime: p.majstori?.ime ?? null,
           kupovina_stanje: zadnja?.stanje ?? null,
+          firma: p.poslovnice?.firme?.naziv ?? null,
+          poslovnica: p.poslovnice?.naziv ?? null,
         };
       }),
     });
@@ -776,6 +950,167 @@ const rute = {
       await izmijeni("cjenovnik", `kategorija=eq.${encodeURIComponent(kat)}`,
                      { cijena: Number(cijena) });
     }
+    posalji(res, 200, { ok: true });
+  },
+
+  /* ── Admin: firme ──────────────────────────────────────────────────────
+     Naloge za poslovnice otvara Božo. Direktor ih ne otvara sam — ko ulazi
+     u sistem ostaje njegova odluka. */
+
+  "GET /api/admin-firme": async (req, res) => {
+    if (!(await trazenAdmin(req, res))) return;
+
+    try {
+      const [firme, poslovnice, nalozi, prijave] = await Promise.all([
+        citaj("firme", "select=*&order=naziv.asc"),
+        citaj("poslovnice", "select=*&order=naziv.asc"),
+        citaj("firma_nalozi", "select=id,firma_id,poslovnica_id,vrsta,ime,nadimak,pauziran"),
+        citaj("prijave_firmi", "select=firma_id,status"),
+      ]);
+
+      posalji(res, 200, {
+        firme: firme.map((f) => ({
+          id: f.id,
+          naziv: f.naziv,
+          pib: f.pib,
+          adresa: f.adresa,
+          pdv_stopa: Number(f.pdv_stopa),
+          pauzirana: f.pauzirana,
+          poslovnice: poslovnice
+            .filter((p) => p.firma_id === f.id)
+            .map((p) => ({
+              ...p,
+              nalozi: nalozi.filter((n) => n.poslovnica_id === p.id),
+            })),
+          direktori: nalozi.filter((n) => n.firma_id === f.id && n.vrsta === "direktor"),
+          prijava: prijave.filter((p) => p.firma_id === f.id).length,
+          nezauzeto: prijave.filter((p) => p.firma_id === f.id && p.status === "slobodan").length,
+        })),
+      });
+    } catch (e) {
+      if (/firme|poslovnice|firma_nalozi|prijave_firmi/.test(e.message)) {
+        return greska(res, 503,
+          "Baza još nije pripremljena za firme. Otvori Supabase → SQL Editor " +
+          "i pokreni supabase-firme.sql, pa probaj opet.");
+      }
+      throw e;
+    }
+  },
+
+  "POST /api/admin-firma": async (req, res) => {
+    if (!(await trazenAdmin(req, res))) return;
+    const t = await tijelo(req);
+
+    const naziv = String(t.naziv ?? "").trim();
+    if (naziv.length < 2) return greska(res, 400, "Naziv firme je prekratak.");
+
+    const polja = {
+      naziv,
+      pib: String(t.pib ?? "").trim() || null,
+      adresa: String(t.adresa ?? "").trim() || null,
+      pdv_stopa: t.pdv_stopa === undefined ? 21 : Number(t.pdv_stopa),
+      ...(t.pauzirana !== undefined ? { pauzirana: !!t.pauzirana } : {}),
+    };
+    if (!(polja.pdv_stopa >= 0 && polja.pdv_stopa <= 100)) {
+      return greska(res, 400, "PDV mora biti broj između 0 i 100.");
+    }
+
+    if (t.id) {
+      await izmijeni("firme", `id=eq.${t.id}`, polja);
+      return posalji(res, 200, { ok: true, id: t.id, nova: false });
+    }
+    const f = await upisi("firme", polja);
+    posalji(res, 201, { ok: true, id: f.id, nova: true });
+  },
+
+  "POST /api/admin-poslovnica": async (req, res) => {
+    if (!(await trazenAdmin(req, res))) return;
+    const t = await tijelo(req);
+
+    const naziv = String(t.naziv ?? "").trim();
+    const adresa = String(t.adresa ?? "").trim();
+    if (naziv.length < 2) return greska(res, 400, "Naziv poslovnice je prekratak.");
+    if (adresa.length < 4) return greska(res, 400, "Upiši adresu — po njoj majstor dolazi.");
+
+    const polja = {
+      naziv, adresa,
+      lokacija: String(t.lokacija ?? "").trim() || "Podgorica",
+      telefon: normalizujTelefon(t.telefon ?? "") || null,
+      ...(t.pauzirana !== undefined ? { pauzirana: !!t.pauzirana } : {}),
+    };
+
+    if (t.id) {
+      await izmijeni("poslovnice", `id=eq.${t.id}`, polja);
+      return posalji(res, 200, { ok: true, id: t.id, nova: false });
+    }
+    if (!t.firma_id) return greska(res, 400, "Nedostaje firma.");
+    const p = await upisi("poslovnice", { ...polja, firma_id: t.firma_id });
+    posalji(res, 201, { ok: true, id: p.id, nova: true });
+  },
+
+  /* Nalog za ulaz u /firme. Šifru smišlja server i vraća je jednom —
+     poslije se ne može pročitati, samo zamijeniti novom. */
+  "POST /api/admin-firma-nalog": async (req, res) => {
+    if (!(await trazenAdmin(req, res))) return;
+    const t = await tijelo(req);
+
+    const ime = String(t.ime ?? "").trim();
+    if (ime.length < 2) return greska(res, 400, "Upiši ko je — ime naloga.");
+
+    const vrsta = t.vrsta === "direktor" ? "direktor" : "poslovnica";
+    if (vrsta === "poslovnica" && !t.poslovnica_id && !t.id) {
+      return greska(res, 400, "Nedostaje poslovnica.");
+    }
+
+    const sifra = String(t.sifra ?? "").trim() || novaSifra();
+    if (sifra.length < 6) return greska(res, 400, "Šifra mora imati bar 6 znakova.");
+
+    // Izmjena postojećeg: mijenja se ime i po potrebi šifra.
+    if (t.id) {
+      await izmijeni("firma_nalozi", `id=eq.${t.id}`, {
+        ime,
+        ...(t.sifra || t.nova_sifra ? { sifra_hash: hash(sifra) } : {}),
+      });
+      return posalji(res, 200, {
+        ok: true, id: t.id, nov: false,
+        ...(t.sifra || t.nova_sifra ? { sifra } : {}),
+      });
+    }
+
+    const nadimak = String(t.nadimak ?? "").trim().toLowerCase() || uOznaku(ime).replace(/_/g, "-");
+    if (nadimak.length < 3) return greska(res, 400, "Korisničko ime je prekratko.");
+
+    const zauzet = await citajJedan(
+      "firma_nalozi", `nadimak=eq.${encodeURIComponent(nadimak)}`,
+    );
+    if (zauzet) return greska(res, 409, `Korisničko ime „${nadimak}" je zauzeto.`);
+
+    const n = await upisi("firma_nalozi", {
+      firma_id: t.firma_id,
+      poslovnica_id: vrsta === "direktor" ? null : t.poslovnica_id,
+      vrsta, ime, nadimak, sifra_hash: hash(sifra),
+    });
+
+    posalji(res, 201, { ok: true, id: n.id, nov: true, nadimak, sifra });
+  },
+
+  "POST /api/admin-firma-nalog-prekidac": async (req, res) => {
+    if (!(await trazenAdmin(req, res))) return;
+    const { id, pauziran } = await tijelo(req);
+
+    await izmijeni("firma_nalozi", `id=eq.${id}`, { pauziran: !!pauziran });
+    // Pauziran nalog ne smije da ostane ulogovan na tuđem telefonu.
+    if (pauziran) await obrisi("sesije", `vrsta=eq.firma&ko_id=eq.${id}`).catch(() => {});
+
+    posalji(res, 200, { ok: true });
+  },
+
+  "POST /api/admin-obrisi-firma-nalog": async (req, res) => {
+    if (!(await trazenAdmin(req, res))) return;
+    const { id } = await tijelo(req);
+
+    await obrisi("sesije", `vrsta=eq.firma&ko_id=eq.${id}`).catch(() => {});
+    await obrisi("firma_nalozi", `id=eq.${id}`);
     posalji(res, 200, { ok: true });
   },
 
