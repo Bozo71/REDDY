@@ -51,16 +51,28 @@ async function trazenAdmin(req, res) {
   return s;
 }
 
+/* Dok se supabase-firme.sql ne pokrene, tabela firma_nalozi ne postoji.
+   Poslovnici ne treba sirova greška iz baze — ona ne zna šta je to. */
+const FALI_FIRME = /firme|poslovnice|firma_nalozi|prijave_firmi/;
+const PORUKA_FIRME =
+  "Dio za firme još nije uključen. Javite se Reddy-ju na 069 600 628.";
+
 /* Nalog firme: poslovnica prijavljuje kvar i vidi svoje, direktor vidi
    cijelu firmu i ništa ne dira. Oba ulaze na /firme. */
 async function trazenaFirma(req, res) {
   const s = await nadjiSesiju(tokenIz(req));
   if (!s || s.vrsta !== "firma") { greska(res, 401, "Niste prijavljeni."); return null; }
 
-  const n = await citajJedan(
-    "firma_nalozi",
-    `id=eq.${s.ko_id}&select=*,firme(id,naziv,pauzirana),poslovnice(id,naziv,adresa,lokacija,telefon,pauzirana)`,
-  );
+  let n;
+  try {
+    n = await citajJedan(
+      "firma_nalozi",
+      `id=eq.${s.ko_id}&select=*,firme(id,naziv,pauzirana),poslovnice(id,naziv,adresa,lokacija,telefon,pauzirana)`,
+    );
+  } catch (e) {
+    if (FALI_FIRME.test(e.message)) { greska(res, 503, PORUKA_FIRME); return null; }
+    throw e;
+  }
   if (!n) { greska(res, 401, "Nalog ne postoji."); return null; }
   if (n.pauziran) { greska(res, 403, "Nalog je pauziran. Javite se Reddy-ju."); return null; }
   if (n.firme?.pauzirana) { greska(res, 403, "Nalog firme je pauziran."); return null; }
@@ -377,10 +389,16 @@ const rute = {
     const t = await tijelo(req);
     const nadimak = String(t.nadimak ?? "").trim().toLowerCase();
 
-    const n = await citajJedan(
-      "firma_nalozi",
-      `nadimak=eq.${encodeURIComponent(nadimak)}&select=*,firme(naziv,pauzirana)`,
-    );
+    let n;
+    try {
+      n = await citajJedan(
+        "firma_nalozi",
+        `nadimak=eq.${encodeURIComponent(nadimak)}&select=*,firme(naziv,pauzirana)`,
+      );
+    } catch (e) {
+      if (FALI_FIRME.test(e.message)) return greska(res, 503, PORUKA_FIRME);
+      throw e;
+    }
     if (!n || !provjeriHash(t.sifra, n.sifra_hash)) {
       return greska(res, 401, "Pogrešno korisničko ime ili šifra.");
     }
@@ -988,7 +1006,7 @@ const rute = {
         })),
       });
     } catch (e) {
-      if (/firme|poslovnice|firma_nalozi|prijave_firmi/.test(e.message)) {
+      if (FALI_FIRME.test(e.message)) {
         return greska(res, 503,
           "Baza još nije pripremljena za firme. Otvori Supabase → SQL Editor " +
           "i pokreni supabase-firme.sql, pa probaj opet.");
