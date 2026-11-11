@@ -1,13 +1,11 @@
 -- REDDY za firme — nalozi po poslovnici.
 -- Pokreni jednom u Supabase → SQL Editor. Može i više puta, ništa ne kvari.
 
+/* Firmi treba samo naziv. Podaci za račun (PIB, sjedište, PDV) dolaze kad
+   se bude pravio račun — nema smisla tražiti ih prije nego zatrebaju. */
 create table if not exists firme (
   id          uuid primary key default gen_random_uuid(),
   naziv       text not null,
-  pib         text,
-  adresa      text,
-  -- PDV se naplaćuje samo ako si u sistemu PDV-a. Ako nisi, stavi 0.
-  pdv_stopa   numeric not null default 21,
   pauzirana   boolean not null default false,
   napravljena timestamptz not null default now()
 );
@@ -42,18 +40,25 @@ create table if not exists firma_nalozi (
 alter table poslovi add column if not exists poslovnica_id uuid
   references poslovnice(id) on delete set null;
 
+/* I ko ga je tačno prijavio. Kad poslovnica ima više naloga, direktor vidi
+   ime, ne samo poslovnicu. Nalog se briše, posao ostaje — zato set null. */
+alter table poslovi add column if not exists prijavio_id uuid
+  references firma_nalozi(id) on delete set null;
+
 create index if not exists idx_poslovnice_firma    on poslovnice(firma_id);
 create index if not exists idx_firma_nalozi_firma  on firma_nalozi(firma_id);
 create index if not exists idx_poslovi_poslovnica  on poslovi(poslovnica_id);
 
-/* Direktorov pregled: sve prijave njegove firme, sa statusom i majstorom.
-   Ime i telefon majstora vidi tek kad je posao kupljen — dotad nema koga. */
+/* Direktorov pregled: sve prijave njegove firme — ko je šta prijavio, u
+   kojoj poslovnici, i dokle je stiglo. Ime i telefon majstora se vide tek
+   kad je posao kupljen — dotad nema koga prikazati. */
 create or replace view prijave_firmi as
 select
   p.id,
   p.poslovnica_id,
   pl.firma_id,
   pl.naziv            as poslovnica,
+  n.ime               as prijavio,
   p.kategorija,
   p.opis,
   p.adresa,
@@ -65,6 +70,7 @@ select
   m.telefon           as majstor_telefon
 from poslovi p
 join poslovnice pl on pl.id = p.poslovnica_id
+left join firma_nalozi n on n.id = p.prijavio_id
 left join majstori m on m.id = p.kupac_id
 where p.poslovnica_id is not null;
 

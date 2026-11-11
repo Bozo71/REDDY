@@ -645,6 +645,7 @@ async function ucitajPoslove() {
           · ${formatBroj(p.klijent_telefon ?? "")}
           ${p.klijent_email ? "· " + bezHtml(p.klijent_email) : ""}
         </div>
+        ${p.prijavio ? `<div class="posao-red">✍️ Prijavio: ${bezHtml(p.prijavio)}</div>` : ""}
         <div class="posao-red">
           ${kupljen || zavrsen
             ? `${zavrsen ? "✓ Završio" : "✅ Kupio"}: <b>${bezHtml(p.kupac_ime ?? "")}</b>`
@@ -881,11 +882,6 @@ async function ucitajFirme() {
           ${f.nezauzeto ? ` · <b style="color:var(--alarm)">${f.nezauzeto} čeka</b>` : ""}
         </span>
       </div>
-      <div class="posao-red">
-        ${f.pib ? `PIB ${bezHtml(f.pib)} · ` : ""}PDV ${f.pdv_stopa}%
-        ${f.adresa ? ` · ${bezHtml(f.adresa)}` : ""}
-      </div>
-
       ${f.direktori.length ? `
         <div class="posao-red" style="margin-top:8px">
           <b>Direktor:</b> ${f.direktori.map((d) =>
@@ -901,27 +897,34 @@ async function ucitajFirme() {
               <div class="posao-red" style="margin:0">
                 📍 ${bezHtml(p.adresa)}${p.telefon ? ` · ${formatBroj(p.telefon)}` : ""}
               </div>
-              <div class="posao-red" style="margin:0">
-                ${p.nalozi.length
-                  ? p.nalozi.map((n) =>
-                      `🔑 ${bezHtml(n.nadimak)}${n.pauziran ? " (pauziran)" : ""}`).join(" · ")
-                  : '<span style="color:var(--alarm)">nema naloga — ne može da se uloguje</span>'}
-              </div>
             </div>
             <div class="poslovnica-dugmad">
               <button class="dugme tiha mala" data-izmijeni-poslovnicu="${p.id}">Izmijeni</button>
-              ${p.nalozi.length
-                ? p.nalozi.map((n) => `
+              <button class="dugme tiha mala" data-nov-nalog="${p.id}"
+                      data-firma="${f.id}">+ Nalog</button>
+            </div>
+          </div>
+
+          ${p.nalozi.length
+            ? p.nalozi.map((n) => `
+                <div class="nalog-red"${n.pauziran ? ' style="opacity:.55"' : ""}>
+                  <div style="flex:1;min-width:140px">
+                    <b>${bezHtml(n.ime)}</b>
+                    ${n.pauziran ? ' <span class="znak crvena">pauziran</span>' : ""}
+                    <div class="posao-red" style="margin:0">🔑 ${bezHtml(n.nadimak)}</div>
+                  </div>
+                  <div class="poslovnica-dugmad">
                     <button class="dugme tiha mala" data-nova-sifra="${n.id}"
                             data-ime="${bezHtml(n.ime)}">Nova šifra</button>
                     <button class="dugme tiha mala" data-nalog-prekidac="${n.id}"
                             data-pauziran="${n.pauziran ? "1" : "0"}">
                       ${n.pauziran ? "Vrati" : "Pauziraj"}
-                    </button>`).join("")
-                : `<button class="dugme mala" data-nov-nalog="${p.id}"
-                           data-firma="${f.id}">Napravi nalog</button>`}
-            </div>
-          </div>`).join("")}
+                    </button>
+                  </div>
+                </div>`).join("")
+            : `<div class="nalog-red" style="color:var(--alarm);font-weight:800">
+                 Nema naloga — ova poslovnica ne može da se uloguje.
+               </div>`}`).join("")}
       </div>
 
       <div class="red-dugmadi">
@@ -1032,9 +1035,6 @@ document.addEventListener("click", async (e) => {
     const f = izmijeniFirmu ? nadjiFirmu(izmijeniFirmu.dataset.izmijeniFirmu) : null;
     prozorForme(f ? `Firma: ${f.naziv}` : "Nova firma", [
       { id: "naziv", naziv: "Naziv firme", vrijednost: f?.naziv, placeholder: "Socerbet" },
-      { id: "pib", naziv: "PIB (za račun)", vrijednost: f?.pib, placeholder: "02345678" },
-      { id: "adresa", naziv: "Sjedište (za račun)", vrijednost: f?.adresa, placeholder: "Bulevar Svetog Petra Cetinjskog 1" },
-      { id: "pdv_stopa", naziv: "PDV %  (0 ako nisi u sistemu PDV-a)", vrijednost: f?.pdv_stopa ?? 21, tip: "number" },
     ], async (v, prozor) => {
       await api("/api/admin-firma", {
         method: "POST",

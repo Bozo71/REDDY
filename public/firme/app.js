@@ -131,6 +131,10 @@ async function ucitajPrijave() {
 
   el("lista-prijave").innerHTML = prijave.map((p) => {
     const [tacka, tekst] = STANJA[p.status] ?? ["ceka", p.status];
+    /* Direktoru uvijek piše ko je prijavio. Poslovnici samo kad se ime
+       razlikuje od njenog — inače bi na svakoj kartici pisalo isto. */
+    const prikaziKo = p.prijavio
+      && (ja.vrsta === "direktor" || p.prijavio !== p.poslovnica);
     return `
       <article class="posao">
         <div class="posao-vrh">
@@ -139,6 +143,7 @@ async function ucitajPrijave() {
             ? `<span class="znak">${bezHtml(p.poslovnica)}</span>` : ""}
         </div>
         <p class="posao-opis">${bezHtml(p.opis)}</p>
+        ${prikaziKo ? `<div class="posao-red">👤 Prijavio: ${bezHtml(p.prijavio)}</div>` : ""}
         ${p.slike?.length ? `<div class="slike">${p.slike.map((s) =>
           `<a href="${bezHtml(s)}" target="_blank" rel="noopener">
              <img src="${bezHtml(s)}" alt="Slika kvara" loading="lazy"></a>`).join("")}</div>` : ""}

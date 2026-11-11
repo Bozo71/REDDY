@@ -476,6 +476,8 @@ const rute = {
       status: "slobodan",
       izvor: "firma",
       poslovnica_id: n.poslovnice.id,
+      // Ko je prijavio — da direktor zna koga da pita za detalje.
+      prijavio_id: n.id,
     });
 
     /* Kontakt je sama poslovnica — majstor zove njih, ne direktora.
@@ -514,6 +516,7 @@ const rute = {
       prijave: redovi.map((p) => ({
         id: p.id,
         poslovnica: p.poslovnica,
+        prijavio: p.prijavio ?? null,
         kategorija: p.kategorija,
         opis: p.opis,
         slike: razbijSlike(p.fotografije),
@@ -659,7 +662,10 @@ const rute = {
        ne pokrene, spisak poslova mora da radi kao i do sad. */
     let redovi;
     try {
-      redovi = await citaj("poslovi", `${osnovno},poslovnice(naziv,firme(naziv))${kraj}`);
+      redovi = await citaj(
+        "poslovi",
+        `${osnovno},poslovnice(naziv,firme(naziv)),firma_nalozi(ime)${kraj}`,
+      );
     } catch {
       redovi = await citaj("poslovi", osnovno + kraj);
     }
@@ -678,6 +684,7 @@ const rute = {
           kupovina_stanje: zadnja?.stanje ?? null,
           firma: p.poslovnice?.firme?.naziv ?? null,
           poslovnica: p.poslovnice?.naziv ?? null,
+          prijavio: p.firma_nalozi?.ime ?? null,
         };
       }),
     });
@@ -990,9 +997,6 @@ const rute = {
         firme: firme.map((f) => ({
           id: f.id,
           naziv: f.naziv,
-          pib: f.pib,
-          adresa: f.adresa,
-          pdv_stopa: Number(f.pdv_stopa),
           pauzirana: f.pauzirana,
           poslovnice: poslovnice
             .filter((p) => p.firma_id === f.id)
@@ -1024,14 +1028,8 @@ const rute = {
 
     const polja = {
       naziv,
-      pib: String(t.pib ?? "").trim() || null,
-      adresa: String(t.adresa ?? "").trim() || null,
-      pdv_stopa: t.pdv_stopa === undefined ? 21 : Number(t.pdv_stopa),
       ...(t.pauzirana !== undefined ? { pauzirana: !!t.pauzirana } : {}),
     };
-    if (!(polja.pdv_stopa >= 0 && polja.pdv_stopa <= 100)) {
-      return greska(res, 400, "PDV mora biti broj između 0 i 100.");
-    }
 
     if (t.id) {
       await izmijeni("firme", `id=eq.${t.id}`, polja);
