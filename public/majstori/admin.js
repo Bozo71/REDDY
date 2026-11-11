@@ -902,6 +902,8 @@ async function ucitajFirme() {
               <button class="dugme tiha mala" data-izmijeni-poslovnicu="${p.id}">Izmijeni</button>
               <button class="dugme tiha mala" data-nov-nalog="${p.id}"
                       data-firma="${f.id}">+ Nalog</button>
+              <button class="dugme tiha mala" data-obrisi-poslovnicu="${p.id}"
+                      data-naziv="${bezHtml(p.naziv)}">Obriši</button>
             </div>
           </div>
 
@@ -931,6 +933,8 @@ async function ucitajFirme() {
         <button class="dugme tiha mala" data-nova-poslovnica="${f.id}">+ Poslovnica</button>
         <button class="dugme tiha mala" data-nov-direktor="${f.id}">+ Direktor</button>
         <button class="dugme tiha mala" data-izmijeni-firmu="${f.id}">Izmijeni firmu</button>
+        <button class="dugme tiha mala" data-obrisi-firmu="${f.id}"
+                data-naziv="${bezHtml(f.naziv)}">Obriši firmu</button>
       </div>
     </article>`).join("");
 
@@ -1120,6 +1124,30 @@ document.addEventListener("click", async (e) => {
         .flatMap((f) => [...f.direktori, ...f.poslovnice.flatMap((p) => p.nalozi)])
         .find((n) => n.id === id);
       pokaziSifru(ime, nalog?.nadimak ?? "", r.sifra);
+    } catch (greska) { porukaFirme(greska.message); }
+    return;
+  }
+
+  const obrisiPoslovnicu = e.target.closest("[data-obrisi-poslovnicu]");
+  const obrisiFirmu = e.target.closest("[data-obrisi-firmu]");
+  if (obrisiPoslovnicu || obrisiFirmu) {
+    const dugme = obrisiPoslovnicu ?? obrisiFirmu;
+    const sta = obrisiFirmu ? "firmu" : "poslovnicu";
+    if (!confirm(
+      `Obrisati ${sta} „${dugme.dataset.naziv}"? ` +
+      `Nestaju i njeni nalozi. Ovo se ne može vratiti.`
+    )) return;
+
+    try {
+      await api(obrisiFirmu ? "/api/admin-obrisi-firmu" : "/api/admin-obrisi-poslovnicu", {
+        method: "POST",
+        body: JSON.stringify({
+          id: obrisiFirmu ? obrisiFirmu.dataset.obrisiFirmu : obrisiPoslovnicu.dataset.obrisiPoslovnicu,
+        }),
+      });
+      await ucitajFirme();
+      porukaFirme("");
+      poruka(`Obrisano: ${dugme.dataset.naziv}`);
     } catch (greska) { porukaFirme(greska.message); }
     return;
   }

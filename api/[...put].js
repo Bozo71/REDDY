@@ -99,6 +99,16 @@ function bazaNijeSpremna(e) {
   return /naziv|redoslijed|aktivna/.test(e.message) && /column|kolon/i.test(e.message);
 }
 
+// 1 posao · 2 posla · 5 poslova — da poruka ne glasi „1 poslova".
+function poslova(n) {
+  const zadnja = n % 10;
+  const dvije = n % 100;
+  if (dvije >= 11 && dvije <= 14) return `${n} poslova`;
+  if (zadnja === 1) return `${n} posao`;
+  if (zadnja >= 2 && zadnja <= 4) return `${n} posla`;
+  return `${n} poslova`;
+}
+
 /* Šifra za poslovnicu. Bez slova koja se miješaju (O/0, I/l/1) — čita se
    sa papira i kuca na telefonu, pa greška u prepisu košta poziv. */
 function novaSifra() {
@@ -1127,6 +1137,48 @@ const rute = {
 
     await obrisi("sesije", `vrsta=eq.firma&ko_id=eq.${id}`).catch(() => {});
     await obrisi("firma_nalozi", `id=eq.${id}`);
+    posalji(res, 200, { ok: true });
+  },
+
+  /* Brisanje poslovnice. Ako je kroz nju prošao makar jedan kvar, ne briše
+     se — posao bi ostao bez poslovnice i ne bi se znalo za koga je rađen.
+     Tada se pauzira: ne može da se uloguje, a istorija ostaje čitava. */
+  "POST /api/admin-obrisi-poslovnicu": async (req, res) => {
+    if (!(await trazenAdmin(req, res))) return;
+    const { id } = await tijelo(req);
+
+    const poslovi = await citaj("poslovi", `poslovnica_id=eq.${id}&select=id`);
+    if (poslovi.length) {
+      return greska(res, 409,
+        `Ova poslovnica ima ${poslova(poslovi.length)} u istoriji, pa se ne briše. ` +
+        `Pauziraj joj nalog — neće moći da se uloguje, a poslovi ostaju zapisani.`);
+    }
+
+    const nalozi = await citaj("firma_nalozi", `poslovnica_id=eq.${id}&select=id`);
+    for (const n of nalozi) {
+      await obrisi("sesije", `vrsta=eq.firma&ko_id=eq.${n.id}`).catch(() => {});
+    }
+    await obrisi("poslovnice", `id=eq.${id}`);   // nalozi idu sa njom (cascade)
+    posalji(res, 200, { ok: true });
+  },
+
+  /* Brisanje cijele firme — isto pravilo, samo za sve njene poslovnice. */
+  "POST /api/admin-obrisi-firmu": async (req, res) => {
+    if (!(await trazenAdmin(req, res))) return;
+    const { id } = await tijelo(req);
+
+    const prijave = await citaj("prijave_firmi", `firma_id=eq.${id}&select=id`);
+    if (prijave.length) {
+      return greska(res, 409,
+        `Ova firma ima ${poslova(prijave.length)} u istoriji, pa se ne briše. ` +
+        `Pauziraj joj naloge — istorija ostaje zapisana.`);
+    }
+
+    const nalozi = await citaj("firma_nalozi", `firma_id=eq.${id}&select=id`);
+    for (const n of nalozi) {
+      await obrisi("sesije", `vrsta=eq.firma&ko_id=eq.${n.id}`).catch(() => {});
+    }
+    await obrisi("firme", `id=eq.${id}`);        // poslovnice i nalozi idu sa njom
     posalji(res, 200, { ok: true });
   },
 
